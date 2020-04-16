@@ -32,5 +32,3 @@ oh_list = 'On-hand inventory.xlsx'
 inventory = it.inv_loader(source, oh_list, TERMINAL_BOMS)
 
 golden_retriever = it.inv_god(inventory, "M6150", 1)
-
-# adding a comment to here

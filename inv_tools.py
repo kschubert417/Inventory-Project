@@ -39,39 +39,11 @@ def inv_loader(path, file_name, items):
 
     return(inventory)
 
-# adding this line here
+
 # Rework utility =====================================================
 # Will find parts needed to put into and take out of terminal if needed
-def rework_comp(term_have, term_need):
-    comp_in = {}
-    comp_out = {}
-    counter = 1
-    # find components needed to put into terminal
-    for component in term_need:
-        if component not in term_have:
-            if counter == 1:
-                comp_in['HD'] = component
-            if counter == 2:
-                comp_in['RAM'] = component
-        counter += 1
-
-    counter = 1
-    # find components needed to take out of terminal
-    for component in term_have:
-        if component not in term_need:
-            if counter == 1:
-                comp_out['HD'] = component
-            if counter == 2:
-                comp_out['RAM'] = component
-        counter += 1
-
-    rework = {'In': comp_in, 'Out': comp_out}
-    return(rework)
-
-# have = TERMINAL_BOMS['M6150']
-# need = TERMINAL_BOMS['M6150-01']
-
-# print(rework_comp(have, need))
+def rework_utility(term_need, term_boms):
+    hw_needed = term_boms[term_need][1]
 
 
 # Inventory God =======================================================

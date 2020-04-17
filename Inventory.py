@@ -17,7 +17,7 @@ else:
                           'Demand Planning', 'AX Reports')
 
 # creating BOM structure for different M6150
-# {Terminal: ["Name",[Hard Drive, RAM]]}
+# {Terminal: ["Name",[Hard Drive, RAM, Stand]]}
 TERMINAL_BOMS = {'M6150': ['M6150', ['SSD.64GB', 'RAM.4GB', 'Stand']],
                  'M6150-01': ['M6150-01', ['SSD.128GB', 'RAM.4GB', 'Stand']],
                  'M6150-02': ['M6150-02', ['SSD.64GB', 'RAM.8GB', 'Stand']],
@@ -28,6 +28,8 @@ TERMINAL_BOMS = {'M6150': ['M6150', ['SSD.64GB', 'RAM.4GB', 'Stand']],
                  '980027028': ['980027028', ['SSD.64GB']]}
 
 oh_list = 'On-hand inventory.xlsx'
+
+it.rework_comp("M6150", "M6150-01")
 
 inventory = it.inv_loader(source, oh_list, TERMINAL_BOMS)
 

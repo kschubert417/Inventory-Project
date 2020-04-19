@@ -47,7 +47,9 @@ def rework_utility(term_need, term_boms):
     hw_needed = term_boms[term_need][1]
     ssd_need = hw_needed[0]
     ram_need = hw_needed[1]
-    print("ssd: " + ssd_need + " | ram: " + ram_need)
+    stand_need = hw_needed[2]
+    print("NEED: ssd: " + ssd_need + " | ram: " + ram_need +
+          " | stand: " + stand_need)
     # want to create an algorithm that "weights" the different
     # terminals I can reconfigure from, lower number will be
     # less difficult to rework than higher numbers
@@ -56,7 +58,7 @@ def rework_utility(term_need, term_boms):
         # do not need to loop through terminal I know I do not have
         if term_boms[items][0] != term_need and \
                 term_need in term_boms[items][0]:
-            print(term_boms[items])
+            print(list(set(term_boms[items][1]) - set(hw_needed)))
 
     return(hw_needed)
 

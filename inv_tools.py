@@ -42,8 +42,23 @@ def inv_loader(path, file_name, items):
 
 # Rework utility =====================================================
 # Will find parts needed to put into and take out of terminal if needed
+
 def rework_utility(term_need, term_boms):
     hw_needed = term_boms[term_need][1]
+    ssd_need = hw_needed[0]
+    ram_need = hw_needed[1]
+    print("ssd: " + ssd_need + " | ram: " + ram_need)
+    # want to create an algorithm that "weights" the different
+    # terminals I can reconfigure from, lower number will be
+    # less difficult to rework than higher numbers
+    for items in term_boms:
+        # print(term_boms[items][0])
+        # do not need to loop through terminal I know I do not have
+        if term_boms[items][0] != term_need and \
+                term_need in term_boms[items][0]:
+            print(term_boms[items])
+
+    return(hw_needed)
 
 
 # Inventory God =======================================================
@@ -68,12 +83,13 @@ def inv_god(oh_list, model, qty=1):
             oh_dict[i[0]] = 1
 
     # rework status of 1 if rework is required, 0 if not
-    if oh_dict[model] < qty:
-        rework_status = 1
-    else:
-        rework_status = 0
+    # if oh_dict[model] < qty:
+    #     rework_status = 1
+    # else:
+    #     rework_status = 0
 
     # extracting parts from inventory we need for sales orders
+    # i in this case is a counter
     while inv_counter < qty:
         for i, item in enumerate(oh_list):
             if item[0] == model and inv_counter < qty:

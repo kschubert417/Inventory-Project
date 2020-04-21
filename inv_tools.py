@@ -29,7 +29,7 @@ def inv_loader(path, file_name, items):
                 # inventory
                 num = 0
                 while num < oh_qty:
-                    inventory.append(items[item])
+                    inventory.append([item, items[item]])
                     num += 1
 
             else:
@@ -44,23 +44,48 @@ def inv_loader(path, file_name, items):
 # Will find parts needed to put into and take out of terminal if needed
 
 def rework_utility(term_need, term_boms):
-    hw_needed = term_boms[term_need][1]
-    ssd_need = hw_needed[0]
-    ram_need = hw_needed[1]
-    stand_need = hw_needed[2]
-    print("NEED: ssd: " + ssd_need + " | ram: " + ram_need +
-          " | stand: " + stand_need)
-    # want to create an algorithm that "weights" the different
-    # terminals I can reconfigure from, lower number will be
-    # less difficult to rework than higher numbers
-    for items in term_boms:
-        # print(term_boms[items][0])
-        # do not need to loop through terminal I know I do not have
-        if term_boms[items][0] != term_need and \
-                term_need in term_boms[items][0]:
-            print(list(set(term_boms[items][1]) - set(hw_needed)))
+    # different scores, higher means more difficulty/labor required
+    ssd_score = 5
+    ram_score = 10
+    stand_score = 2
+    rework_scores = {}
+    hw_need = term_boms[term_need]
 
-    return(hw_needed)
+    # want to create an algorithm that "weighs" the different terminals I can
+    # reconfigure from, lower number will be less difficult to rework than
+    # higher numbers
+    for terminal in term_boms:
+        if len(term_boms[terminal]) == 3 and terminal != term_need:
+            counter = 0
+            score = 0
+            for components in term_boms[terminal]:
+                # Any component not in BOM is something I will need to add in
+                # and for the rework.
+                if components != hw_need[counter]:
+                    if "SSD" in components:
+                        score += ssd_score
+                    elif "RAM" in components:
+                        score += ram_score
+                counter += 1
+            rework_scores[score] = terminal
+
+        # Creating seperate conditions for terminals with no stand
+        # BOM has only a length of 2
+        elif len(term_boms[terminal]) == 2 and terminal != term_need:
+            counter = 0
+            score = stand_score
+            for components in term_boms[terminal]:
+                # Any component not in BOM is something I will need to add in
+                # and for the rework.
+                if components != hw_need[counter]:
+                    if "SSD" in components:
+                        score += ssd_score
+                    elif "RAM" in components:
+                        score += ram_score
+                counter += 1
+            rework_scores[score] = terminal
+
+    return(rework_scores)
 
 
 # Inventory God =======================================================
@@ -99,9 +124,7 @@ def inv_god(oh_list, model, qty=1):
                 found.append(item)
                 # finding indexes where we are taking inventory from
                 locations.append(i)
-
                 inv_counter += 1
-
                 # updating oh_dict with terminal we took
                 oh_dict[item[0]] -= 1
 

@@ -1,5 +1,7 @@
 import os
+import operator
 import pandas as pd
+
 
 
 # Inventory loader ============================================================
@@ -22,7 +24,7 @@ def inv_loader(path, file_name, items):
             if row['Item number'] in items.keys():
                 item = row['Item number']
                 # oh_qty = row['Available physical']
-                oh_qty = 5  # choosing 5 for now
+                oh_qty = 2  # choosing 5 for now
 
                 # object oriented approach, one list for each part that exists
                 # in inventory. Will create one index for each item in
@@ -31,7 +33,6 @@ def inv_loader(path, file_name, items):
                 while num < oh_qty:
                     inventory.append([item, items[item]])
                     num += 1
-
             else:
                 pass
         else:
@@ -92,7 +93,8 @@ def rework_utility(term_need, term_boms):
 # Inventory god function, finds the parts you are looking for
 # returns the parts/quantities you are looking for as well
 # as the inventory that is left over
-def inv_god(oh_list, model, qty=1):
+# according to Tyler this is very limited
+def inv_god(oh_list, model, term_boms, qty=1):
     # oh_list is the object oriented inventory we have on hand
     # model is the model number we are looking for
     # qty is the quantity of the terminal we need
@@ -110,27 +112,35 @@ def inv_god(oh_list, model, qty=1):
             oh_dict[i[0]] = 1
 
     # rework status of 1 if rework is required, 0 if not
-    # if oh_dict[model] < qty:
-    #     rework_status = 1
-    # else:
-    #     rework_status = 0
+    if oh_dict[model] >= qty:
+        print("No need to rework \n")
 
-    # extracting parts from inventory we need for sales orders
-    # i in this case is a counter
-    while inv_counter < qty:
-        for i, item in enumerate(oh_list):
-            if item[0] == model and inv_counter < qty:
-                # adding item to stuff we are taking
-                found.append(item)
-                # finding indexes where we are taking inventory from
-                locations.append(i)
-                inv_counter += 1
-                # updating oh_dict with terminal we took
-                oh_dict[item[0]] -= 1
+        # extracting parts from inventory we need for sales orders
+        # i in this case is a counter
+        while inv_counter < qty:
+            for i, item in enumerate(oh_list):
+                if item[0] == model and inv_counter < qty:
+                    # adding item to stuff we are taking
+                    found.append(item)
+                    # finding indexes where we are taking inventory from
+                    locations.append(i)
+                    inv_counter += 1
+                    # updating oh_dict with terminal we took
+                    oh_dict[item[0]] -= 1
+    else:
+        # this will get hairy
+        print("Need to rework")
+        # getting rework priority... need to get BOMS in here, add as argument
+        # to this function?
+        # using default order dictionary comes in
+        rework_order = rework_utility(model, term_boms)
+        # sorting rework order from least to most difficult
+        rework_order = sorted(rework_order.items(), key=operator.itemgetter(0))
+        print(rework_order)
+        for score, terminal in rework_order:
+            print("Score: ", score, " | ", oh_dict[terminal])
 
-            # elif:
-                # rework, etc, etc
-
+    # print(oh_dict)
     # removing parts from on hand list
     for i in locations:
         oh_list.pop(i)

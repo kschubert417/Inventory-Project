@@ -30,10 +30,10 @@ TERMINAL_BOMS = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
 
 oh_list = 'On-hand inventory.xlsx'
 
-# it.rework_utility("M6150", TERMINAL_BOMS)
+print(it.rework_utility("M6150", TERMINAL_BOMS))
 
 inventory = it.inv_loader(source, oh_list, TERMINAL_BOMS)
 
-
-golden_retriever = it.inv_god(inventory, "M6150", 1)
-# print(golden_retriever)
+# Class definition?
+golden_retriever = it.inv_god(inventory, "M6150", TERMINAL_BOMS, 3)
+print(golden_retriever)

@@ -6,15 +6,15 @@ compname = soc.gethostname()
 # print("Computer Name: " + compname)
 
 if compname == 'DESKTOP-3U5BV0O':
-    # setting up desired directories (Home Desktop) =========================
-    source = os.path.join('C:\\', 'Users', 'Karl',
-                          'Onedrive - PAR Technology Corporation',
-                          'Demand Planning', 'AX Reports')
+    # setting up desired directories (Home Desktop)
+    cpu = 'Karl'
 else:
     # setting up desired directories (Work Computer)
-    source = os.path.join('C:\\', 'Users', 'SchubertK',
-                          'Onedrive - PAR Technology Corporation',
-                          'Demand Planning', 'AX Reports')
+    cpu = 'SchubertK'
+
+fle_path = os.path.join('C:\\', 'Users', cpu,
+                        'Onedrive - PAR Technology Corporation',
+                        'Demand Planning', 'AX Reports')
 
 # creating BOM structure for different M6150
 # {Terminal: [Hard Drive, RAM, Stand]}
@@ -30,10 +30,15 @@ TERMINAL_BOMS = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
 
 oh_list = 'On-hand inventory.xlsx'
 
-print(it.rework_utility("M6150", TERMINAL_BOMS))
+f = it.inv_tools("Instance")
 
-inventory = it.inv_loader(source, oh_list, TERMINAL_BOMS)
+f.inv_loader(fle_path, TERMINAL_BOMS)
+# print(f.oh_list)
 
-# Class definition?
-golden_retriever = it.inv_god(inventory, "M6150", TERMINAL_BOMS, 3)
-print(golden_retriever)
+# does not like M6150-1X
+f.rework_utility("M6150-01", TERMINAL_BOMS)
+print(f.rework_rank)
+
+# call function from another function?
+f.inv_god(f.oh_list, "M6150", TERMINAL_BOMS)
+print(f.inv_retriever)

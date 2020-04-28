@@ -35,10 +35,9 @@ f = it.inv_tools("Instance")
 f.inv_loader(fle_path, TERMINAL_BOMS)
 # print(f.oh_list)
 
-# does not like M6150-1X
-f.rework_utility("M6150-01", TERMINAL_BOMS)
+f.rework_utility("M6150-10", TERMINAL_BOMS)
 print(f.rework_rank)
 
 # call function from another function?
-f.inv_god(f.oh_list, "M6150", TERMINAL_BOMS)
+f.inv_god(f.oh_list, "M6150", 3, TERMINAL_BOMS)
 print(f.inv_retriever)

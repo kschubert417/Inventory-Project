@@ -18,9 +18,18 @@ class inv_tools:
                     '980027042': ['SSD.128GB'],
                     '980027028': ['SSD.64GB']}
 
-        self.oh_list = []
+        self.oh_dict = {}
         self.rework_rank = {}
         self.inv_retriever = {}
+
+    def add_inventory(self, part, qty):
+        if part in self.oh_dict.keys():
+            self.oh_dict[part] += qty
+        else:
+            self.oh_dict[part] = qty
+
+    def remove_inventory(self, part, qty):
+        self.oh_dict[part] -= qty
 
     # searches for parts you are concerned with then returns an object
     # oriented version of the on hand inventory
@@ -31,7 +40,7 @@ class inv_tools:
         os.chdir(path)
         oh_list = pd.read_excel('On-hand inventory.xlsx')
 
-        inventory = []
+        # inventory = {}
 
         for index, row in oh_list.iterrows():
             # filtering for warehouses I need with qty > 0
@@ -41,21 +50,16 @@ class inv_tools:
                 if row['Item number'] in self.bom.keys():
                     item = row['Item number']
                     # oh_qty = row['Available physical']
-                    oh_qty = 2  # choosing 5 for now
+                    oh_qty = 2  # choosing 2 for now
 
-                    # object oriented approach, one list for each part that
-                    # exists in inventory. Will create one index for each item
-                    # in inventory
-                    num = 0
-                    while num < oh_qty:
-                        inventory.append([item, self.bom[item]])
-                        num += 1
+                    # loading inventory into dictionary
+                    self.add_inventory(item, oh_qty)
                 else:
                     pass
             else:
                 pass
 
-        self.oh_list = inventory
+        # self.oh_list = inventory
 
     # Rework utility =====================================================
     # Will find parts needed to put into and take out of terminal if needed
@@ -64,7 +68,6 @@ class inv_tools:
         stand_score = 2
         ssd_score = 5
         ram_score = 10
-        rework_scores = {}
         hw_need = self.bom[term_need]
 
         # want to create an algorithm that "weighs" the different terminals
@@ -75,6 +78,7 @@ class inv_tools:
                 if len(self.bom[terminal]) == 3 and terminal != term_need:
                     counter = 0
                     score = 0
+                    # def getscore(self, terminal)
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
                         # add in and for the rework.
@@ -112,7 +116,6 @@ class inv_tools:
                         if counter == 2:
                             pass
                         elif components != hw_need[counter]:
-                            print(counter)
                             if "SSD" in components:
                                 score += ssd_score
                             elif "RAM" in components:
@@ -123,60 +126,18 @@ class inv_tools:
 
     # Inventory God =======================================================
     # Inventory god function, finds the parts you are looking for
-    # returns the parts/quantities you are looking for as well
-    # as the inventory that is left over
-    # according to Tyler this is very limited
+    # and decides if a rework is needed
     def inv_god(self, model, qty):
-        # oh_list is the object oriented inventory we have on hand
-        # model is the model number we are looking for
-        # qty is the quantity of the terminal we need
-        inv_counter = 0
-        found = []
-        locations = []
-
-        # Summarizing the inventory we have on hand, will use this to determine
-        # whether a rework is needed or not
-        oh_dict = {}
-        for i in self.oh_list:
-            if i[0] in oh_dict.keys():
-                oh_dict[i[0]] += 1
-            else:
-                oh_dict[i[0]] = 1
-
         # checking to see if qty of part on hand is enough to satisfy demand
-        if oh_dict[model] >= qty:
-            print("No need to rework \n")
-
-            # extracting parts from inventory we need for sales orders
-            # i in this case is a counter
-            while inv_counter < qty:
-                for i, item in enumerate(self.oh_list):
-                    if item[0] == model and inv_counter < qty:
-                        # adding item to stuff we are taking
-                        found.append(item)
-                        # finding indexes where we are taking inventory from
-                        locations.append(i)
-                        inv_counter += 1
-                        # updating oh_dict with terminal we took
-                        oh_dict[item[0]] -= 1
+        if self.oh_dict[model] >= qty:
+            print("\n No need to rework \n")
+            self.remove_inventory(model, qty)
         else:
             # this will get hairy
             print("Need to rework \n")
-            # getting rework priority... need to get BOMS in here, add as
-            # argument to this function?
-            # using default order dictionary comes in
-            rework_order = self.rework_rank
+            # getting rework priority
             # sorting rework order from least to most difficult
-            rework_order = sorted(rework_order.items(),
+            rework_order = sorted(self.rework_rank.items(),
                                   key=operator.itemgetter(0))
-            print(rework_order)
             for score, terminal in rework_order:
                 print(terminal, " | ", "Score: ", score)
-
-        # print(oh_dict)
-        # removing parts from on hand list
-        for i in locations:
-            self.oh_list.pop(i)
-
-        # return({"Retrieved": found, "Inventory": oh_list})
-        self.inv_retriever = {"Retrieved": found, "Inventory": self.oh_list}

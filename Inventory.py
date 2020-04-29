@@ -22,11 +22,12 @@ oh_list = 'On-hand inventory.xlsx'
 f = it.inv_tools("Instance")
 
 f.inv_loader(fle_path)
-print(f.oh_list)
+print(f.oh_dict)
 
 f.rework_utility("M6150")
 print(f.rework_rank)
 
 # call function from another function?
-f.inv_god("M6150", 2)
+f.inv_god("M6150", 3)
 print(f.inv_retriever)
+print(f.oh_dict)

@@ -16,18 +16,18 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
                         'Onedrive - PAR Technology Corporation',
                         'Demand Planning', 'AX Reports')
 
-
 oh_list = 'On-hand inventory.xlsx'
 
 f = it.inv_tools("Instance")
 
 f.inv_loader(fle_path)
-print(f.oh_dict)
+# print(f.oh_dict)
 
-f.rework_utility("M6150")
-print(f.rework_rank)
+f.rework_comp("M6150", "M6150-03")
+# print(f.rework_in_out)
 
-# call function from another function?
-f.inv_god("M6150", 3)
-print(f.inv_retriever)
-print(f.oh_dict)
+# f.rework_rank("M6150")
+# print(f.rework_order)
+
+f.inv_god("M6150", 5)
+# print(f.oh_dict)

@@ -1,9 +1,11 @@
+
 # creating BOM structure for different M6150
 # {Terminal: [Hard Drive, RAM]}
-TERMINAL_BOMS = {'M6150': ['64GBHD', '4GBRAM'],
-                 'M6150-01': ['128GBHD', '4GBRAM'],
-                 'M6150-02': ['64GBHD', '8GBRAM'],
-                 'M6150-03': ['128GBHD', '8GBRAM']}
+TERMINAL_BOMS = {'M6150': ['64GBHD', '4GBRAM', "Stand"],
+                 'M6150-01': ['128GBHD', '4GBRAM', "Stand"],
+                 'M6150-02': ['64GBHD', '8GBRAM', "Stand"],
+                 'M6150-03': ['128GBHD', '8GBRAM', "Stand"],
+                 'M6150-10': ['128GBHD', '8GBRAM']}
 
 # for each terminal, the order of how we should rework from
 # least to most complicated
@@ -12,11 +14,10 @@ REWORK_ORDER = {'M6150': ['M6150-01', 'M6150-02', 'M6150-03'],
                 'M6150-02': ['M6150-03', 'M6150', 'M6150-01'],
                 'M6150-03': ['M6150-02', 'M6150', 'M6150-01']}
 
+
 # need to create something to assist with reworking
 # returns what parts need to come out
-
-
-def rework_comp(term_have, term_need):
+def rework_comp(have, need):
     comp_in = {}
     comp_out = {}
     counter = 1
@@ -27,6 +28,8 @@ def rework_comp(term_have, term_need):
                 comp_in['HD'] = component
             if counter == 2:
                 comp_in['RAM'] = component
+            if counter == 3:
+                comp_in['STAND'] = component
         counter += 1
 
     counter = 1
@@ -37,6 +40,8 @@ def rework_comp(term_have, term_need):
                 comp_out['HD'] = component
             if counter == 2:
                 comp_out['RAM'] = component
+            if counter == 3:
+                comp_in['STAND'] = component
         counter += 1
 
     rework = {'In': comp_in, 'Out': comp_out}

@@ -23,11 +23,5 @@ f = it.inv_tools("Instance")
 f.inv_loader(fle_path)
 # print(f.oh_dict)
 
-f.rework_comp("M6150", "M6150-03")
-# print(f.rework_in_out)
-
-# f.rework_rank("M6150")
-# print(f.rework_order)
-
-f.inv_god("M6150", 5)
+f.inv_god("M6150", 10)
 # print(f.oh_dict)

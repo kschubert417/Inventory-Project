@@ -33,6 +33,7 @@ class inv_tools:
         self.oh_dict = {}
         self.rework_in_out = {}
         self.rework_order = {}
+        self.rework_labor = {}
         self.inv_retriever = {}
 
     # function to add inventory
@@ -54,22 +55,66 @@ class inv_tools:
         self.remove_inventory(part, qty)
         # looping through components in part and adding them into inventory
         for i in self.bom[part]:
+            print("Adding ", str(qty), i, " to inventory")
             self.add_inventory(i, qty)
-
+    '''
     # removing a terminal's components from inventory, need to take Inventory
     # of components needed to make rework happen
     def get_gainz(self, part, qty):
         # Components in "part" is what we want to remove from inventory
         # looping through components in part and adding to inventory
         for i in self.bom[part]:
+            print("Removing ", str(qty), i, " from inventory")
             self.remove_inventory(i, qty)
+    '''
+
+    # creating function that adds all necessary parts into/out of inventory
+    # from rework info
+    def get_gainz(self, have, need, qty=1):
+        """
+        Parameters
+        ----------
+        have : type
+            The part we have available for rework
+        need : type
+            The item we need to turn the part we "have" into
+        qty : type
+            Qty of the part we are reworking
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
+        self.rework_comp(have, need)
+        rework = self.rework_in_out
+        # removing from inventory needed to perform rework
+        for i in rework["In"]:
+            print("taking from inventory: ", rework["In"][i])
+            self.remove_inventory(self.rework_in_out["In"][i], qty)
+        # adding parts we need to take out of terminal into Inventory
+        for i in rework["Out"]:
+            print("adding into inventory: ", rework["Out"][i])
+            self.add_inventory(self.rework_in_out["Out"][i], qty)
+        # removing terminal we used for the rework from inventory
+        self.remove_inventory(have, qty)
 
     # searches for parts you are concerned with then returns an object
     # oriented version of the on hand inventory
     def inv_loader(self, path):
-        # path: where file is located
-        # file_name: name of file we are looking for
-        # boms: dictionary that contains the parts we are looking for
+        """
+        Parameters
+        ----------
+        path : file location
+            Path where inventory file is located
+
+        Returns
+        -------
+        type
+            Returns a dictionary where the items are the keys and the Inventory
+            on hand for that particular item is the key
+        """
         os.chdir(path)
         oh_list = pd.read_excel('On-hand inventory.xlsx')
 
@@ -144,9 +189,11 @@ class inv_tools:
     # Will find parts needed to put into and take out of terminal if needed
     def rework_rank(self, term_need):
         # different scores, higher means more difficulty/labor required
-        stand_score = 2
-        ssd_score = 5
-        ram_score = 10
+        stand_score, ssd_score, ram_score = 2, 5, 10
+
+        # going to add cost of labor in as well
+        stand_labor, ssd_labor, ram_labor = 10, 5, 20
+
         hw_need = self.bom[term_need]
 
         # want to create an algorithm that "weighs" the different terminals
@@ -157,6 +204,7 @@ class inv_tools:
                 if len(self.bom[terminal]) == 3 and terminal != term_need:
                     counter = 0
                     score = 0
+                    labor = 0
                     # def getscore(self, terminal)
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
@@ -164,31 +212,39 @@ class inv_tools:
                         if components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
+                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
+                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
+                    self.rework_labor[terminal] = labor
 
                 # Creating seperate conditions for terminals with no stand
                 # BOM has only a length of 2
                 elif len(self.bom[terminal]) == 2 and terminal != term_need:
                     counter = 0
                     score = stand_score
+                    labor = stand_labor
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
                         # add in and for the rework
                         if components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
+                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
+                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
+                    self.rework_labor[terminal] = labor
         else:
             for terminal in self.bom:
                 if len(self.bom[terminal]) == 3 and terminal != term_need:
                     counter = 0
                     score = stand_score
+                    labor = stand_labor
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
                         # add in and for the rework.
@@ -197,16 +253,20 @@ class inv_tools:
                         elif components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
+                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
+                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
+                    self.rework_labor[terminal] = labor
         # {score: terminal}
 
     # Inventory God =======================================================
     # Inventory god function, finds the parts you are looking for
     # and decides if a rework is needed
     def inv_god(self, model, demandqty):
+        print("Demand for", str(demandqty), model, '\n')
         # model is the terminal called out on demand
         # demandqty is the quantity of the terminal needed
         # checking to see if demandqty of part on hand is enough to satisfy
@@ -245,15 +305,20 @@ class inv_tools:
             # getting min quantity we can rework
             qtyshort = min(qtyshort, maxrework)
 
+            # removing what is left of this part from inventory
+            self.remove_inventory(model, self.oh_dict[model])
+
             # sorting rework order from least to most difficult
             self.rework_rank(model)
             order = sorted(self.rework_order.items(),
                            key=operator.itemgetter(0))
+
+            print("Qty left:", str(qtyshort), "\n")
             for score, terminal in order:
                 ohqty = self.oh_dict[terminal]
 
                 if qtyshort > 0:
-                    print(terminal)
+                    print("Reworking:", terminal, "into", model)
                     # if ohqty larger than qtyshort then take the terminal
                     # qty we are short. Else, we are taking everything in
                     # inventory we have of that part
@@ -261,11 +326,13 @@ class inv_tools:
                         print("Qty Taking: ", qtyshort)
                         qtyshort -= qtyshort
                         # adding and removing components from invetory
-                        self.mr_clean(terminal, qtyshort)
-                        self.get_gainz(terminal, qtyshort)
+                        self.get_gainz(terminal, model, qtyshort)
+                        print("Qty left:", str(qtyshort), "\n")
                     else:
                         print("Qty Taking: ", ohqty)
                         qtyshort -= self.oh_dict[terminal]
                         # adding and removing components from invetory
-                        self.mr_clean(terminal, ohqty)
-                        self.get_gainz(terminal, ohqty)
+                        self.get_gainz(terminal, model, ohqty)
+                        print("Qty left:", str(qtyshort), "\n")
+
+            print(self.oh_dict)

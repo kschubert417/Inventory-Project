@@ -18,6 +18,15 @@ class inv_tools:
         # components that go into terminals
         self.components = ['RAM.4GB', 'RAM.8GB', 'SSD.64GB', 'SSD.128GB',
                            'Stand']
+
+        # Demand information
+        # {Terminal: [Forecast, Demand]}
+        self.demand = {'M6150': [130, 50],
+                       'M6150-01': [100, 50],
+                       'M6150-02': [0, 50],
+                       'M6150-03': [10, 10],
+                       'M6150-10': [0, 20]}
+
         # {Terminal: [Hard Drive, RAM, Stand]}
         self.bom = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
                     'M6150-01': ['SSD.128GB', 'RAM.4GB', 'Stand'],

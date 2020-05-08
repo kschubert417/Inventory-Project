@@ -19,9 +19,12 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
 oh_list = 'On-hand inventory.xlsx'
 
 f = it.inv_tools("Instance")
+s = it.simulation("Instance")
 
-f.inv_loader(fle_path)
+# f.inv_loader(fle_path)
 # print(f.oh_dict)
 
-f.inv_god("M6150", 10)
+f.inv_god("M6150", 500)
 # print(f.oh_dict)
+
+s.run(1)

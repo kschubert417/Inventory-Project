@@ -19,14 +19,6 @@ class inv_tools:
         self.components = ['RAM.4GB', 'RAM.8GB', 'SSD.64GB', 'SSD.128GB',
                            'Stand']
 
-        # Demand information
-        # {Terminal: [Forecast, Demand]}
-        self.demand = {'M6150': [130, 50],
-                       'M6150-01': [100, 50],
-                       'M6150-02': [0, 50],
-                       'M6150-03': [10, 10],
-                       'M6150-10': [0, 20]}
-
         # {Terminal: [Hard Drive, RAM, Stand]}
         self.bom = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
                     'M6150-01': ['SSD.128GB', 'RAM.4GB', 'Stand'],
@@ -39,11 +31,22 @@ class inv_tools:
                     '980027042': ['SSD.128GB'],
                     '980027063': ['Stand']}
 
-        self.oh_dict = {}
+        # adding initial inventory
+        self.oh_dict = {'M6150': 200, 'M6150-01': 100, 'M6150-02': 100,
+                        'M6150-03': 10, 'M6150-10': 100,
+                        'SSD.64GB': 10000, 'SSD.128GB': 10000,
+                        'RAM.4GB': 10000, 'RAM.8GB': 10000,
+                        'Stand': 10000}
+
         self.rework_in_out = {}
         self.rework_order = {}
         self.rework_labor = {}
-        self.inv_retriever = {}
+
+    def getqty(self, model):
+        if model in self.inventory.keys():
+            return self.inventory[model]
+        else:
+            print("Model not found in inventory")
 
     # function to add inventory
     def add_inventory(self, part, qty):
@@ -54,7 +57,9 @@ class inv_tools:
 
     # function to reduce inventory
     def remove_inventory(self, part, qty):
-        self.oh_dict[part] -= qty
+        # checking to see if we can't remove inventory
+        if self.oh_dict[part] > 0:
+            self.oh_dict[part] -= qty
 
     # removing terminal and adding its components from inventory. Need to use
     # the terminal in the rework and add parts not needed from terminal
@@ -66,16 +71,6 @@ class inv_tools:
         for i in self.bom[part]:
             print("Adding ", str(qty), i, " to inventory")
             self.add_inventory(i, qty)
-    '''
-    # removing a terminal's components from inventory, need to take Inventory
-    # of components needed to make rework happen
-    def get_gainz(self, part, qty):
-        # Components in "part" is what we want to remove from inventory
-        # looping through components in part and adding to inventory
-        for i in self.bom[part]:
-            print("Removing ", str(qty), i, " from inventory")
-            self.remove_inventory(i, qty)
-    '''
 
     # creating function that adds all necessary parts into/out of inventory
     # from rework info
@@ -94,65 +89,20 @@ class inv_tools:
         -------
         type
             Description of returned object.
-
         """
+
         self.rework_comp(have, need)
         rework = self.rework_in_out
         # removing from inventory needed to perform rework
         for i in rework["In"]:
-            print("taking from inventory: ", rework["In"][i])
+            print("\ttaking from inventory: ", rework["In"][i])
             self.remove_inventory(self.rework_in_out["In"][i], qty)
         # adding parts we need to take out of terminal into Inventory
         for i in rework["Out"]:
-            print("adding into inventory: ", rework["Out"][i])
+            print("\tadding into inventory: ", rework["Out"][i])
             self.add_inventory(self.rework_in_out["Out"][i], qty)
         # removing terminal we used for the rework from inventory
         self.remove_inventory(have, qty)
-
-    # searches for parts you are concerned with then returns an object
-    # oriented version of the on hand inventory
-    def inv_loader(self, path):
-        """
-        Parameters
-        ----------
-        path : file location
-            Path where inventory file is located
-
-        Returns
-        -------
-        type
-            Returns a dictionary where the items are the keys and the Inventory
-            on hand for that particular item is the key
-        """
-        os.chdir(path)
-        oh_list = pd.read_excel('On-hand inventory.xlsx')
-
-        for index, row in oh_list.iterrows():
-            # filtering for warehouses I need with qty > 0
-            if row['Warehouse'] == 'NH' or row['Warehouse'] == 'NHSupply' and \
-                    row['Available physical'] > 0:
-                # only concnerned with parts in TERMINAL_BOMS
-                if row['Item number'] in self.bom.keys():
-                    # turning inventory into something more readable
-                    # ex: 980027041 into RAM.8GB
-                    item = row['Item number']
-
-                    if "M61" in item:
-                        item = row['Item number']
-                        oh_qty = 2  # choosing 2 for now
-                    else:
-                        item = self.bom[item][0]
-                        oh_qty = 1000  # choosing 2 for now
-
-                    # oh_qty = row['Available physical']
-                    # oh_qty = 2  # choosing 2 for now
-
-                    # loading inventory into dictionary
-                    self.add_inventory(item, oh_qty)
-                else:
-                    pass
-            else:
-                pass
 
     # defining function to inform program what parts need to come in/out
     # of a terminal for a rework to happen... do not really need
@@ -276,6 +226,7 @@ class inv_tools:
     # and decides if a rework is needed
     def inv_god(self, model, demandqty):
         print("Demand for", str(demandqty), model, '\n')
+        print()
         # model is the terminal called out on demand
         # demandqty is the quantity of the terminal needed
         # checking to see if demandqty of part on hand is enough to satisfy
@@ -284,7 +235,10 @@ class inv_tools:
             print("\n No need to rework... life is good :) \n")
             self.remove_inventory(model, demandqty)
 
-        else:  # not looking forward to this
+        else:
+            # when demand is higher than inventory, add function in to
+            # keep track of terminals I need to expedite in
+
             print("Need to rework... how could you let this happen? \n")
             # going to use the min number of drives or ram or stands
             # to see how many terminals I can actually rework
@@ -325,23 +279,58 @@ class inv_tools:
             print("Qty left:", str(qtyshort), "\n")
             for score, terminal in order:
                 ohqty = self.oh_dict[terminal]
-
-                if qtyshort > 0:
-                    print("Reworking:", terminal, "into", model)
-                    # if ohqty larger than qtyshort then take the terminal
-                    # qty we are short. Else, we are taking everything in
-                    # inventory we have of that part
-                    if ohqty > qtyshort:
-                        print("Qty Taking: ", qtyshort)
-                        qtyshort -= qtyshort
-                        # adding and removing components from invetory
-                        self.get_gainz(terminal, model, qtyshort)
-                        print("Qty left:", str(qtyshort), "\n")
-                    else:
-                        print("Qty Taking: ", ohqty)
-                        qtyshort -= self.oh_dict[terminal]
-                        # adding and removing components from invetory
-                        self.get_gainz(terminal, model, ohqty)
-                        print("Qty left:", str(qtyshort), "\n")
+                if ohqty > 0:
+                    if qtyshort > 0:
+                        print("Reworking:", terminal, "into", model)
+                        # if ohqty larger than qtyshort then take the terminal
+                        # qty we are short. Else, we are taking everything in
+                        # inventory we have of that part
+                        if ohqty > qtyshort:
+                            print("\tQty Taking: ", qtyshort)
+                            qtyshort -= qtyshort
+                            # adding and removing components from invetory
+                            self.get_gainz(terminal, model, qtyshort)
+                            print("\tDemand Qty left:", str(qtyshort), "\n")
+                        else:
+                            print("\tQty Taking: ", ohqty)
+                            qtyshort -= self.oh_dict[terminal]
+                            # adding and removing components from invetory
+                            self.get_gainz(terminal, model, ohqty)
+                            print("\tDemand Qty left:", str(qtyshort), "\n")
+                else:
+                    pass
 
             print(self.oh_dict)
+
+
+class simulation:
+    def __init__(self, np):
+        # fp = file path
+        # Demand information
+        # {Terminal: [Forecast, Demand]}
+        self.demand = {'M6150': [130, 50],
+                       'M6150-01': [100, 50],
+                       'M6150-02': [0, 50],
+                       'M6150-03': [10, 10],
+                       'M6150-10': [0, 20]}
+
+        # need to tell simulation I will need to call inv_tools
+        # self.f = inv_tools()
+
+        self.np = np
+        # add MRP like functionality
+
+    def run(self, np):
+        p = 0
+        f = inv_tools("Something")
+        while p < np:
+            for item in self.demand:
+                print(item)
+                forecast = self.demand[item][0]
+                demand = self.demand[item][1]
+                '''
+                if forecast > demand:
+                else:
+                    f.inv_god(item, demand)
+                '''
+            p += 1

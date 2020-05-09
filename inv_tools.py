@@ -32,8 +32,8 @@ class inv_tools:
                     '980027063': ['Stand']}
 
         # adding initial inventory
-        self.oh_dict = {'M6150': 200, 'M6150-01': 100, 'M6150-02': 100,
-                        'M6150-03': 10, 'M6150-10': 100,
+        self.oh_dict = {'M6150': 130, 'M6150-01': 100, 'M6150-02': 0,
+                        'M6150-03': 0, 'M6150-10': 100,
                         'SSD.64GB': 10000, 'SSD.128GB': 10000,
                         'RAM.4GB': 10000, 'RAM.8GB': 10000,
                         'Stand': 10000}
@@ -60,6 +60,18 @@ class inv_tools:
         # checking to see if we can't remove inventory
         if self.oh_dict[part] > 0:
             self.oh_dict[part] -= qty
+
+    # function to take forecasted quantity, subtract current inventory from
+    # it and add the difference to inventory
+    # ex: if inventory > forecast, do not need to order more inventory
+    def mrp(self, model, forecast):
+        inventory = self.oh_dict[model]
+        if forecast > inventory:
+            qty = forecast - inventory
+            print("\tAdding ", str(qty), " to inventory")
+            self.add_inventory(model, qty)
+        else:
+            print("\tEnough inventory to cover demand")
 
     # removing terminal and adding its components from inventory. Need to use
     # the terminal in the rework and add parts not needed from terminal
@@ -95,11 +107,11 @@ class inv_tools:
         rework = self.rework_in_out
         # removing from inventory needed to perform rework
         for i in rework["In"]:
-            print("\ttaking from inventory: ", rework["In"][i])
+            print("\t\ttaking from inventory: ", rework["In"][i])
             self.remove_inventory(self.rework_in_out["In"][i], qty)
         # adding parts we need to take out of terminal into Inventory
         for i in rework["Out"]:
-            print("\tadding into inventory: ", rework["Out"][i])
+            print("\t\tadding into inventory: ", rework["Out"][i])
             self.add_inventory(self.rework_in_out["Out"][i], qty)
         # removing terminal we used for the rework from inventory
         self.remove_inventory(have, qty)
@@ -225,21 +237,20 @@ class inv_tools:
     # Inventory god function, finds the parts you are looking for
     # and decides if a rework is needed
     def inv_god(self, model, demandqty):
-        print("Demand for", str(demandqty), model, '\n')
+        print("\tDemand for", str(demandqty), model, '\n')
         print()
         # model is the terminal called out on demand
         # demandqty is the quantity of the terminal needed
         # checking to see if demandqty of part on hand is enough to satisfy
         # demand
         if self.oh_dict[model] >= demandqty:
-            print("\n No need to rework... life is good :) \n")
             self.remove_inventory(model, demandqty)
 
         else:
             # when demand is higher than inventory, add function in to
             # keep track of terminals I need to expedite in
 
-            print("Need to rework... how could you let this happen? \n")
+            print("\tNeed to rework... how could you let this happen?")
             # going to use the min number of drives or ram or stands
             # to see how many terminals I can actually rework
             term_bom = self.bom[model]
@@ -276,31 +287,29 @@ class inv_tools:
             order = sorted(self.rework_order.items(),
                            key=operator.itemgetter(0))
 
-            print("Qty left:", str(qtyshort), "\n")
+            print("\tQty left:", str(qtyshort), "\n")
             for score, terminal in order:
                 ohqty = self.oh_dict[terminal]
                 if ohqty > 0:
                     if qtyshort > 0:
-                        print("Reworking:", terminal, "into", model)
+                        print("\t\tReworking:", terminal, "into", model)
                         # if ohqty larger than qtyshort then take the terminal
                         # qty we are short. Else, we are taking everything in
                         # inventory we have of that part
                         if ohqty > qtyshort:
-                            print("\tQty Taking: ", qtyshort)
-                            qtyshort -= qtyshort
+                            print("\t\tQty Taking: ", qtyshort)
                             # adding and removing components from invetory
                             self.get_gainz(terminal, model, qtyshort)
-                            print("\tDemand Qty left:", str(qtyshort), "\n")
+                            qtyshort -= qtyshort
+                            print("\t\tDemand Qty left:", str(qtyshort), "\n")
                         else:
-                            print("\tQty Taking: ", ohqty)
+                            print("\t\tQty Taking: ", ohqty)
                             qtyshort -= self.oh_dict[terminal]
                             # adding and removing components from invetory
                             self.get_gainz(terminal, model, ohqty)
-                            print("\tDemand Qty left:", str(qtyshort), "\n")
+                            print("\t\tDemand Qty left:", str(qtyshort), "\n")
                 else:
                     pass
-
-            print(self.oh_dict)
 
 
 class simulation:
@@ -310,7 +319,7 @@ class simulation:
         # {Terminal: [Forecast, Demand]}
         self.demand = {'M6150': [130, 50],
                        'M6150-01': [100, 50],
-                       'M6150-02': [0, 50],
+                       'M6150-02': [0, 150],
                        'M6150-03': [10, 10],
                        'M6150-10': [0, 20]}
 
@@ -325,12 +334,14 @@ class simulation:
         f = inv_tools("Something")
         while p < np:
             for item in self.demand:
-                print(item)
+                print(f.oh_dict)
                 forecast = self.demand[item][0]
                 demand = self.demand[item][1]
-                '''
-                if forecast > demand:
-                else:
-                    f.inv_god(item, demand)
-                '''
+                print(item, "\n\tForecast:", str(forecast),
+                      "\n\tDemand:", str(demand),
+                      "\n\tInventory:", str(f.oh_dict[item]))
+
+                f.mrp(item, forecast)
+                f.inv_god(item, demand)
+
             p += 1

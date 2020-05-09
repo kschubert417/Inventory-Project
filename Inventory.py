@@ -21,10 +21,6 @@ oh_list = 'On-hand inventory.xlsx'
 f = it.inv_tools("Instance")
 s = it.simulation("Instance")
 
-# f.inv_loader(fle_path)
-# print(f.oh_dict)
-
-f.inv_god("M6150", 500)
-# print(f.oh_dict)
+# f.inv_god("M6150", 500)
 
 s.run(1)

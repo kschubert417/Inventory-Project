@@ -1,9 +1,7 @@
-import os
 import operator
-import pandas as pd
 
 # Assumptions:
-# 1) inventory like RAM, SSD, and Stands are in infinite NHSupply. The purpose
+# 1) inventory like RAM, SSD, and Stands are in infinite supply. The purpose
 # of this model is to simulate how the supply chain can operate under the
 # different scenarios where the ES600 is a buy, make, and hybrid model
 
@@ -12,14 +10,16 @@ import pandas as pd
 class inv_tools:
     def __init__(self, name):
         self.name = name
+
         # All terminals
         self.terminals = ['M6150', 'M6150-01', 'M6150-02', 'M6150-03',
                           'M6150-10']
+
         # components that go into terminals
         self.components = ['RAM.4GB', 'RAM.8GB', 'SSD.64GB', 'SSD.128GB',
                            'Stand']
 
-        # {Terminal: [Hard Drive, RAM, Stand]}
+        # {Itemnumber: [Hard Drive, RAM, Stand]}
         self.bom = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
                     'M6150-01': ['SSD.128GB', 'RAM.4GB', 'Stand'],
                     'M6150-02': ['SSD.64GB', 'RAM.8GB', 'Stand'],
@@ -41,8 +41,30 @@ class inv_tools:
         self.rework_in_out = {}
         self.rework_order = {}
         self.rework_labor = {}
+        self.freight = {}
 
-    def getqty(self, model):
+    ''' Need to figure freight out... and net/average inventory
+    def freight(self, Itemnumber):
+        # if item number is terminal, need to apply freight cost for terminal
+        if Itemnumber in self.terminals:
+            # freight cost per terminal for different methods
+            standardfreight = 10
+            premiumfreight = 45
+            if some condition:
+                self.freight["Premium"] += premiumfreight
+            else:
+                self.freight["Standard"] += standardfreight
+        else:
+            # freight cost per component for different methods
+            standardfreight = 5
+            premiumfreight = 25
+            if some condition:
+                self.freight["Premium"] += premiumfreight
+            else:
+                self.freight["Standard"] += standardfreight
+    '''
+
+    def getinv(self, model):
         if model in self.inventory.keys():
             return self.inventory[model]
         else:
@@ -71,18 +93,7 @@ class inv_tools:
             print("\tAdding ", str(qty), " to inventory")
             self.add_inventory(model, qty)
         else:
-            print("\tEnough inventory to cover demand")
-
-    # removing terminal and adding its components from inventory. Need to use
-    # the terminal in the rework and add parts not needed from terminal
-    # back into inventory
-    def mr_clean(self, part, qty):
-        # removing top level part from inventory
-        self.remove_inventory(part, qty)
-        # looping through components in part and adding them into inventory
-        for i in self.bom[part]:
-            print("Adding ", str(qty), i, " to inventory")
-            self.add_inventory(i, qty)
+            print("\tInventory enough to cover forecast")
 
     # creating function that adds all necessary parts into/out of inventory
     # from rework info
@@ -102,7 +113,6 @@ class inv_tools:
         type
             Description of returned object.
         """
-
         self.rework_comp(have, need)
         rework = self.rework_in_out
         # removing from inventory needed to perform rework
@@ -125,6 +135,7 @@ class inv_tools:
         comp_in = {}
         comp_out = {}
 
+        # checking length of the BOM for terminal to see if stand is needed
         if len(have) > len(need):
             comp_out["Stand"] = "Stand"
         elif len(have) < len(need):
@@ -158,6 +169,8 @@ class inv_tools:
 
     # Rework utility =====================================================
     # Will find parts needed to put into and take out of terminal if needed
+    # returns the score needed to rework each terminal we have into the
+    # terminal we need
     def rework_rank(self, term_need):
         # different scores, higher means more difficulty/labor required
         stand_score, ssd_score, ram_score = 2, 5, 10
@@ -249,8 +262,8 @@ class inv_tools:
         else:
             # when demand is higher than inventory, add function in to
             # keep track of terminals I need to expedite in
-
             print("\tNeed to rework... how could you let this happen?")
+
             # going to use the min number of drives or ram or stands
             # to see how many terminals I can actually rework
             term_bom = self.bom[model]
@@ -317,11 +330,11 @@ class simulation:
         # fp = file path
         # Demand information
         # {Terminal: [Forecast, Demand]}
-        self.demand = {'M6150': [130, 50],
+        self.demand = {'M6150': [200, 50],
                        'M6150-01': [100, 50],
-                       'M6150-02': [0, 150],
+                       'M6150-02': [5, 150],
                        'M6150-03': [10, 10],
-                       'M6150-10': [0, 20]}
+                       'M6150-10': [5, 20]}
 
         # need to tell simulation I will need to call inv_tools
         # self.f = inv_tools()
@@ -330,18 +343,23 @@ class simulation:
         # add MRP like functionality
 
     def run(self, np):
+        # np = number of periods I want to run simulation
         p = 0
         f = inv_tools("Something")
-        while p < np:
+        while p <= np:
+            print("\n\n\nPeriod:", str(p), "=v=v=v=v=v=v=v=v=v=v=v=v=v \n\n\n")
             for item in self.demand:
                 print(f.oh_dict)
                 forecast = self.demand[item][0]
                 demand = self.demand[item][1]
                 print(item, "\n\tForecast:", str(forecast),
-                      "\n\tDemand:", str(demand),
                       "\n\tInventory:", str(f.oh_dict[item]))
 
+                # reviewing forecast for part and seeing if we need to add
+                # inventory
                 f.mrp(item, forecast)
+
+                # now time for the real demand for the part
                 f.inv_god(item, demand)
 
             p += 1

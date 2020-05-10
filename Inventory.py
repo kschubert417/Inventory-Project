@@ -23,4 +23,4 @@ s = it.simulation("Instance")
 
 # f.inv_god("M6150", 500)
 
-s.run(1)
+s.run(10)

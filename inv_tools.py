@@ -38,6 +38,9 @@ class inv_tools:
                         'RAM.4GB': 10000, 'RAM.8GB': 10000,
                         'Stand': 10000}
 
+        # create dictionary for cost types
+        self.costs = {"Premium Freight": 0.0, "Regular Freight": 0.0,
+                      "Rework": 0.0}
         self.rework_in_out = {}
         self.rework_order = {}
         self.rework_labor = {}
@@ -323,6 +326,7 @@ class inv_tools:
                             print("\t\tDemand Qty left:", str(qtyshort), "\n")
                 else:
                     pass
+# inventory in one time period vs over several time periods
 
 
 class simulation:
@@ -330,8 +334,8 @@ class simulation:
         # fp = file path
         # Demand information
         # {Terminal: [Forecast, Demand]}
-        self.demand = {'M6150': [200, 50],
-                       'M6150-01': [100, 50],
+        self.demand = {'M6150': [5, 50],
+                       'M6150-01': [5, 50],
                        'M6150-02': [5, 150],
                        'M6150-03': [10, 10],
                        'M6150-10': [5, 20]}

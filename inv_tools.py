@@ -334,7 +334,7 @@ class simulation:
         # fp = file path
         # Demand information
         # {Terminal: [Forecast, Demand]}
-        self.demand = {'M6150': [5, 50],
+        self.demand = {'M6150': [500, 50],
                        'M6150-01': [5, 50],
                        'M6150-02': [5, 150],
                        'M6150-03': [10, 10],

@@ -3,7 +3,6 @@ import socket as soc
 import inv_tools as it
 
 compname = soc.gethostname()
-# print("Computer Name: " + compname)
 
 if compname == 'DESKTOP-3U5BV0O':
     # setting up desired directories (Home Desktop)
@@ -16,11 +15,9 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
                         'Onedrive - PAR Technology Corporation',
                         'Demand Planning', 'AX Reports')
 
-oh_list = 'On-hand inventory.xlsx'
-
 f = it.inv_tools("Instance")
 s = it.simulation("Instance")
 
 # f.inv_god("M6150", 500)
 
-s.run(10)
+s.run(2)

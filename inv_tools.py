@@ -1,3 +1,4 @@
+import json
 import operator
 
 # Assumptions:
@@ -34,37 +35,52 @@ class inv_tools:
         # adding initial inventory
         self.oh_dict = {'M6150': 0, 'M6150-01': 0, 'M6150-02': 0,
                         'M6150-03': 0, 'M6150-10': 0,
-                        'SSD.64GB': 10000, 'SSD.128GB': 10000,
-                        'RAM.4GB': 10000, 'RAM.8GB': 10000,
-                        'Stand': 10000}
+                        'SSD.64GB': 0, 'SSD.128GB': 0,
+                        'RAM.4GB': 0, 'RAM.8GB': 0,
+                        'Stand': 0}
 
         # create dictionary for cost types
-        self.costs = {"Premium Freight": 0.0, "Standard Freight": 0.0,
-                      "Rework": 0.0}
+        self.costs = {"Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
+                                  "Premium": {"Cost": 0.0, "Qty": 0.0}},
+                      "Manufacturing": {"ReworkLabor": 0.0,
+                                        "UnitsReworked": 0.0}}
         self.rework_in_out = {}
         self.rework_order = {}
         self.rework_labor = {}
-        self.freight = {}
 
     # Need to figure freight out... and net/average inventory
-    def freight(self, Itemnumber, Freighttype):
+    def freight(self, Itemnumber, Qty, Freighttype):
+        # adding part we are bringing in into inventory
+        # self.add_inventory(Itemnumber, Qty)
         # if item number is terminal, need to apply freight cost for terminal
         if Itemnumber in self.terminals:
             # freight cost per terminal for different methods
-            standardfreight = 10
             premiumfreight = 45
-            if some condition:
-                self.costs["Premium Freight"] += premiumfreight
+            standardfreight = 10
+            if Freighttype == "Premium":
+                print("\tPaying dat premium freight")
+                self.costs["Freight"]["Premium"]["Cost"]\
+                    += premiumfreight * Qty
+                self.costs["Freight"]["Premium"]["Qty"] += Qty
             else:
-                self.freight["Standard Freight"] += standardfreight
+                print("\tPaying dat standard freight")
+                self.costs["Freight"]["Standard"]["Cost"]\
+                    += standardfreight * Qty
+                self.costs["Freight"]["Standard"]["Qty"] += Qty
         else:
             # freight cost per component for different methods
             standardfreight = 5
             premiumfreight = 25
-            if some condition:
-                self.freight["Premium Freight"] += premiumfreight
+            if Freighttype == "Premium":
+                print("\tPaying dat premium freight")
+                self.costs["Freight"]["Premium"]["Cost"]\
+                    += premiumfreight * Qty
+                self.costs["Freight"]["Premium"]["Qty"] += Qty
             else:
-                self.freight["Standard Freight"] += standardfreight
+                print("\tPaying dat standard freight")
+                self.costs["Freight"]["Standard"]["Cost"]\
+                    += standardfreight * Qty
+                self.costs["Freight"]["Standard"]["Qty"] += Qty
 
     def getinv(self, model):
         if model in self.inventory.keys():
@@ -94,12 +110,13 @@ class inv_tools:
             qty = forecast - inventory
             self.add_inventory(model, qty)
             print("\tAdding ", str(qty), " to inventory")
+            self.freight(model, qty, 'Standard')
         else:
             print("\tInventory enough to cover forecast\n\n")
 
     # creating function that adds all necessary parts into/out of inventory
     # from rework info
-    def get_gainz(self, have, need, qty=1):
+    def get_gainz(self, have, need, qty=1):  # rework
         """
         Parameters
         ----------
@@ -119,18 +136,25 @@ class inv_tools:
         rework = self.rework_in_out
         # removing from inventory needed to perform rework
         for i in rework["In"]:
-            print("\t\ttaking from inventory: ", rework["In"][i])
-            self.remove_inventory(self.rework_in_out["In"][i], qty)
+            component = rework["In"][i]
+            onhand = self.oh_dict[component]
+            if qty > onhand:
+                orderqty = qty - onhand
+                self.freight(component, orderqty, "Premium")
+                self.add_inventory(component, orderqty)
+            print("\t\ttaking from inventory: ", component)
+            self.remove_inventory(component, qty)
         # adding parts we need to take out of terminal into Inventory
         for i in rework["Out"]:
-            print("\t\tadding into inventory: ", rework["Out"][i])
-            self.add_inventory(self.rework_in_out["Out"][i], qty)
+            component = rework["Out"][i]
+            print("\t\tadding into inventory: ", component)
+            self.add_inventory(component, qty)
         # removing terminal we used for the rework from inventory
         self.remove_inventory(have, qty)
 
     # defining function to inform program what parts need to come in/out
     # of a terminal for a rework to happen... do not really need
-    def rework_comp(self, have, need):
+    def rework_comp(self, have, need):  # rework
         have = self.bom[have]
         need = self.bom[need]
 
@@ -173,7 +197,7 @@ class inv_tools:
     # Will find parts needed to put into and take out of terminal if needed
     # returns the score needed to rework each terminal we have into the
     # terminal we need
-    def rework_rank(self, term_need):
+    def rework_rank(self, term_need):  # rework
         # different scores, higher means more difficulty/labor required
         stand_score, ssd_score, ram_score = 2, 5, 10
 
@@ -246,7 +270,8 @@ class inv_tools:
                         counter += 1
                     self.rework_order[score] = terminal
                     self.rework_labor[terminal] = labor
-        # {score: terminal}
+        # self.rework_order = {score: terminal}
+        # self.rework_labor = {terminal: labor}
 
     # Inventory God =======================================================
     # Inventory god function, finds the parts you are looking for
@@ -267,6 +292,9 @@ class inv_tools:
 
             # getting total quantity of terminals we are short
             qtyshort = demandqty - self.oh_dict[model]
+            qty = qtyshort
+            # expediting freight here
+            self.freight(model, qtyshort, "Premium")
 
             # removing what is left of this part from inventory
             self.remove_inventory(model, self.oh_dict[model])
@@ -289,16 +317,34 @@ class inv_tools:
                             print("\t\tQty Taking: ", qtyshort)
                             # adding and removing components from invetory
                             self.get_gainz(terminal, model, qtyshort)
+
+                            # adding associated rework costs to dictionary
+                            self.costs["Manufacturing"]["UnitsReworked"]\
+                                += qtyshort
+                            self.costs["Manufacturing"]["ReworkLabor"]\
+                                += qtyshort * self.rework_labor[terminal]
+
+                            # decrementing total quantity short
                             qtyshort -= qtyshort
                             print("\t\tDemand Qty left:", str(qtyshort), "\n")
                         else:
                             print("\t\tQty Taking: ", ohqty)
-                            qtyshort -= self.oh_dict[terminal]
                             # adding and removing components from invetory
                             self.get_gainz(terminal, model, ohqty)
+
+                            # adding associated rework costs to dictionary
+                            self.costs["Manufacturing"]["UnitsReworked"]\
+                                += ohqty
+                            self.costs["Manufacturing"]["ReworkLabor"]\
+                                += ohqty * self.rework_labor[terminal]
+
+                            # decrementing total quantity short
+                            qtyshort -= ohqty
                             print("\t\tDemand Qty left:", str(qtyshort), "\n")
                 else:
                     pass
+            # adding inventory ERP system would have said to expedite here
+            self.add_inventory(model, qty)
 
 
 class simulation:
@@ -309,7 +355,7 @@ class simulation:
         self.demand = {'M6150': [300, 10],
                        'M6150-01': [100, 10],
                        'M6150-02': [100, 10],
-                       'M6150-03': [10, 400],
+                       'M6150-03': [10, 300],
                        'M6150-10': [100, 10]}
 
         # self.f = inv_tools()
@@ -343,6 +389,7 @@ class simulation:
                 forecast = self.demand[item][0]
                 demand = self.demand[item][1]
                 inventory = f.oh_dict[item]
+
                 print(item, "\n\tForecast:", str(forecast),
                       "\n\tInventory:", str(inventory))
 
@@ -350,3 +397,6 @@ class simulation:
                 f.inv_god(item, demand)
 
             p += 1
+
+        print(f.oh_dict)
+        print(json.dumps(f.costs))

@@ -1,4 +1,5 @@
 import os
+import json
 import socket as soc
 import inv_tools as it
 
@@ -20,4 +21,8 @@ s = it.simulation("Instance")
 
 # f.inv_god("M6150", 500)
 
-s.run(2)
+s.run(1)
+
+# can't print inventory or costs at end?
+# print(f.oh_dict)
+# print(json.dumps(f.costs))

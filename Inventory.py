@@ -1,5 +1,4 @@
 import os
-import json
 import socket as soc
 import inv_tools as it
 
@@ -16,13 +15,15 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
                         'Onedrive - PAR Technology Corporation',
                         'Demand Planning', 'AX Reports')
 
-f = it.inv_tools("Instance")
+# f = it.inv_tools("Instance")
+# r = it.rework("Instance")
 s = it.simulation("Instance")
 
-# f.inv_god("M6150", 500)
+# simulation for regular PAR
+# s.run(1)
 
-s.run(1)
+# simulation for postponement/riskpooling PAR
+s.run2(1)
 
-# can't print inventory or costs at end?
-# print(f.oh_dict)
-# print(json.dumps(f.costs))
+# save metrics in inventory.py?
+# print(f.costs)

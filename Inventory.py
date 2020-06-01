@@ -23,7 +23,7 @@ s = it.simulation("Instance")
 # s.run(1)
 
 # simulation for postponement/riskpooling PAR
-s.run2(1)
+s.run2(200)
 
 # save metrics in inventory.py?
 # print(f.costs)

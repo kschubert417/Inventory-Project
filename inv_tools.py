@@ -1,5 +1,6 @@
 import json
 import operator
+import random
 
 # needs: ============================
 # tweak data structure
@@ -24,11 +25,11 @@ class inv_tools:
         self.components = ['SSD.64GB', 'SSD.128GB', 'RAM.4GB', 'RAM.8GB',
                            'Stand']
 
-        self.values = {'M6150': 430.27, 'M6150-01': 435.80, 'M6150-02': 559.14,
-                       'M6150-03': 520.20, 'M6150-10': 420.5,
-                       'RAM.4GB': 59.99, 'RAM.8GB': 108,
-                       'SSD.64GB': 47.36, 'SSD.128GB': 84.53,
-                       'Stand': 21.88}
+        self.values = {'M6150': 430, 'M6150-01': 435, 'M6150-02': 559,
+                       'M6150-03': 520, 'M6150-10': 420,
+                       'RAM.4GB': 59, 'RAM.8GB': 108,
+                       'SSD.64GB': 47, 'SSD.128GB': 84,
+                       'Stand': 21}
 
         # {Itemnumber: [Hard Drive, RAM, Stand]}
         self.bom = {'M6150': ['SSD.64GB', 'RAM.4GB', 'Stand'],
@@ -42,20 +43,71 @@ class inv_tools:
                     'SSD.128GB': ['SSD.128GB'],  # '980027040'
                     'Stand': ['Stand']}  # '980027040'
 
-        # adding initial inventory
-        self.oh_dict = {}
-
         # create dictionary for cost types
-        self.costs = {"Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
+        self.costs = {"Total Cost": 0,
+                      "Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
                                   "Premium": {"Cost": 0.0, "Qty": 0.0}},
                       "Manufacturing": {"ReworkLabor": 0.0,
                                         "UnitsReworked": 0.0},
                       "Inventory": {}}
 
-        self.rework_in_out = {}
+        # self.periodresults = [{"Total Cost": 0, "Freight":
+        # {"Standard Cost": 0.0, "Standard Qty": 0.0},
+        #                          "Premium Cost": 0.0, "Premium Qty": 0.0}},
+        #              "ReworkLabor": 0.0, "UnitsReworked": 0.0},
+        #              "Inventory": {}]
+
+        self.plotdata = {"Standard Freight Cost": [],
+                         "Standard Freight Units": [],
+                         "Premium Freight Cost": [],
+                         "Premium Freight Units": [],
+                         "Total Inventory": []}
+
+        self.oh_dict = {}
         self.rework_order = {}
         self.rework_labor = {}
-        self.inventory_stats = {}
+        self.periodresults = {}
+
+    # setting up info for next period
+    def periodstats(self, Period=1, Stats=["Standard Freight Cost",
+                                           "Standard Freight Units",
+                                           "Premium Freight Cost",
+                                           "Premium Freight Units",
+                                           "Total Inventory"]):
+        if Period in self.periodresults.keys():
+            pass
+        else:
+            self.periodresults[Period] = {}
+            for stat in Stats:
+                self.periodresults[Period][stat] = 0.0
+        # print(self.periodresults)
+
+    def periodstatsplot(self, period=1):
+        # inventory values
+        totalvalue = 0
+        for item in self.oh_dict:
+            totalvalue += self.oh_dict[item] * self.values[item]
+        self.periodresults[period]["Total Inventory"] = totalvalue
+
+        print("\n\n\n\n\n\t\t\t\tprinting self.periodresults here")
+        print(self.periodresults)
+        print("\n\n\n\n\n")
+
+
+
+        self.plotdata["Standard Freight Cost"].\
+            append(self.periodresults[period]["Standard Freight Cost"])
+        self.plotdata["Standard Freight Units"].\
+            append(self.periodresults[period]["Standard Freight Units"])
+        self.plotdata["Premium Freight Cost"].\
+            append(self.periodresults[period]["Premium Freight Cost"])
+        self.plotdata["Premium Freight Units"].\
+            append(self.periodresults[period]["Premium Freight Units"])
+        self.plotdata["Total Inventory"].\
+            append(self.periodresults[period]["Total Inventory"])
+        print("\n\n\n\n\n\t\t\t\tprinting plotdata here")
+        print(self.plotdata)
+        print("\n\n\n\n\n")
 
     # INVENTORY FUNCTIONS ===================================================
     # function to reset inventory before each simulation run need to turn
@@ -66,13 +118,13 @@ class inv_tools:
             for component in self.bom[item]:
                 self.oh_dict[component] = 0
 
-    def build(self, model, qty):
+    def build(self, model, qty, period=1):
         print("\t\t\tBuilding", model, "with:")
         for component in self.bom[model]:
             onhand = self.oh_dict[component]
             if qty > onhand:
                 orderqty = qty - onhand
-                self.freight(component, orderqty, "Premium")
+                self.freight(component, orderqty, "Premium", period)
                 self.add_inventory(component, orderqty)
                 print("\t\t\t", str(qty), component)
                 self.remove_inventory(component, qty)
@@ -93,35 +145,62 @@ class inv_tools:
                 max = ohqty
         return(max)
 
+    # move items from components to terminals
+    # used to help second simulation
+    def thechange(self, items=['RAM.4GB', 'RAM.8GB']):
+        for i in items:
+            # removing components and adding them to terminals
+            self.components.remove(i)
+            self.terminals += [i]
+            # adjusting value to get the "shell" of terminal with ram
+            self.values[i] += 383
+
     # creating function to return desired inventory metrics
     # like total value, units on hand by type, etc
     def inventorymetrics(self):
+        # inventory values
         invdict = {}
         totalvalue = 0
         for item in self.oh_dict:
             totalvalue += self.oh_dict[item] * self.values[item]
-        invdict["Total Value"] = totalvalue
+        invdict["Inventory Value"] = totalvalue
         invdict["Units"] = self.oh_dict
         self.costs["Inventory"] = invdict
 
+        # total cost
+        self.costs["Total Cost"] += self.costs['Freight']["Standard"]["Cost"]
+        self.costs["Total Cost"] += self.costs['Freight']["Premium"]["Cost"]
+        self.costs["Total Cost"] += self.costs['Manufacturing']["ReworkLabor"]
+        self.costs["Total Cost"] += self.costs['Inventory']["Inventory Value"]
+
     # Need to figure freight out... and net/average inventory
-    def freight(self, Itemnumber, Qty, Freighttype):
+    def freight(self, Itemnumber, Qty, Freighttype, Period=1):
         # adding part we are bringing in into inventory
         # if item number is terminal, need to apply freight cost for terminal
         if Itemnumber in self.terminals:
             # freight cost per terminal for different methods
-            premiumfreight = 45
             standardfreight = 10
+            premiumfreight = 45
             if Freighttype == "Premium":
                 print("\tPremium freight:", Itemnumber, str(Qty))
                 self.costs["Freight"]["Premium"]["Cost"]\
                     += premiumfreight * Qty
                 self.costs["Freight"]["Premium"]["Qty"] += Qty
+
+                # adding stats to periodresults
+                self.periodresults[Period]["Premium Freight Cost"] +=\
+                    premiumfreight * Qty
+                self.periodresults[Period]["Premium Freight Units"] += Qty
             else:
                 print("\tStandard freight:", Itemnumber, str(Qty))
                 self.costs["Freight"]["Standard"]["Cost"]\
                     += standardfreight * Qty
                 self.costs["Freight"]["Standard"]["Qty"] += Qty
+
+                # adding stats to periodresults
+                self.periodresults[Period]["Standard Freight Cost"] +=\
+                    standardfreight * Qty
+                self.periodresults[Period]["Standard Freight Units"] += Qty
         else:
             # freight cost per component for different methods
             standardfreight = 5
@@ -131,11 +210,21 @@ class inv_tools:
                 self.costs["Freight"]["Premium"]["Cost"]\
                     += premiumfreight * Qty
                 self.costs["Freight"]["Premium"]["Qty"] += Qty
+
+                # adding stats to periodresults
+                self.periodresults[Period]["Premium Freight Cost"] +=\
+                    premiumfreight * Qty
+                self.periodresults[Period]["Premium Freight Units"] += Qty
             else:
                 print("\tStandard freight:", Itemnumber, str(Qty))
                 self.costs["Freight"]["Standard"]["Cost"]\
                     += standardfreight * Qty
                 self.costs["Freight"]["Standard"]["Qty"] += Qty
+
+                # adding stats to periodresults
+                self.periodresults[Period]["Standard Freight Cost"] +=\
+                    standardfreight * Qty
+                self.periodresults[Period]["Standard Freight Units"] += Qty
 
     def getinv(self, model):
         if model in self.inventory.keys():
@@ -159,21 +248,21 @@ class inv_tools:
     # function to take forecasted quantity, subtract current inventory from
     # it and add the difference to inventory
     # ex: if inventory > forecast, do not need to order more inventory
-    def mrp(self, part, forecast):
+    def mrp(self, part, forecast, period=1):
         if part in self.oh_dict.keys():
             inventory = self.oh_dict[part]
             if forecast > inventory:
                 qty = forecast - inventory
                 self.add_inventory(part, qty)
                 print("\tAdding ", str(qty), part, "to inventory")
-                self.freight(part, qty, 'Standard')
+                self.freight(part, qty, 'Standard', period)
             else:
                 print("\tInventory enough to cover forecast\n\n")
         else:
             self.oh_dict[part] = forecast
 
     # function to go through all parts forecast and add components to inventory
-    def mrp2(self, demanddict):
+    def mrp2(self, demanddict, period=1):
         compforecast = {}
         for terminal in demanddict:
             # forecast quantity for terminal
@@ -184,11 +273,11 @@ class inv_tools:
                 else:
                     compforecast[component] = fcqty
         for component in compforecast:
-            self.mrp(component, compforecast[component])
+            self.mrp(component, compforecast[component], period)
 
     # creating function that adds all necessary parts into/out of inventory
     # from rework info
-    def get_gainz(self, have, need, qty=1):  # rework
+    def get_gainz(self, have, need, qty=1, period=1):  # rework
         """
         Parameters
         ----------
@@ -204,15 +293,15 @@ class inv_tools:
         type
             Description of returned object.
         """
-        self.rework_comp(have, need)
-        rework = self.rework_in_out
+        # self.rework_comp(have, need)
+        rework = self.rework_comp(have, need)
         # removing inventory needed to perform rework
         for i in rework["In"]:
             component = rework["In"][i]
             onhand = self.oh_dict[component]
             if qty > onhand:
                 orderqty = qty - onhand
-                self.freight(component, orderqty, "Premium")
+                self.freight(component, orderqty, "Premium", period)
                 self.add_inventory(component, orderqty)
             print("\t\ttaking from inventory: ", component)
             self.remove_inventory(component, qty)
@@ -262,7 +351,8 @@ class inv_tools:
                     comp_out['RAM'] = component
             counter += 1
 
-        self.rework_in_out = {"In": comp_in, "Out": comp_out}
+        return({"In": comp_in, "Out": comp_out})
+        # self.rework_in_out = {"In": comp_in, "Out": comp_out}
         # {In: {HD: SSD#, RAM: RAM#, Stand: Stand},
         # Out: {HD: SSD#, RAM: RAM#, Stand: Stand}}
 
@@ -348,7 +438,7 @@ class inv_tools:
     # SIMULATION BRAINS ======================================================
     # Inventory god function, finds the parts you are looking for
     # and decides if a rework is needed
-    def inv_god(self, model, demandqty):
+    def inv_god(self, model, demandqty, period=1):
         print("\tDemand for", str(demandqty), model, '\n')
         # model is the terminal called out on demand
         # demandqty is the quantity of the terminal needed
@@ -364,7 +454,7 @@ class inv_tools:
 
             # getting total quantity of terminals we are short
             qtyshort = demandqty - self.oh_dict[model]
-            qty = qtyshort
+            # qty = qtyshort
             # expediting freight here
             # self.freight(model, qtyshort, "Premium")
 
@@ -388,7 +478,7 @@ class inv_tools:
                         if ohqty > qtyshort:
                             print("\t\tQty Taking: ", qtyshort)
                             # adding and removing components from invetory
-                            self.get_gainz(terminal, model, qtyshort)
+                            self.get_gainz(terminal, model, qtyshort, period)
 
                             # adding associated rework costs to dictionary
                             self.costs["Manufacturing"]["UnitsReworked"]\
@@ -402,7 +492,7 @@ class inv_tools:
                         else:
                             print("\t\tQty Taking: ", ohqty)
                             # adding and removing components from invetory
-                            self.get_gainz(terminal, model, ohqty)
+                            self.get_gainz(terminal, model, ohqty, period)
 
                             # adding associated rework costs to dictionary
                             self.costs["Manufacturing"]["UnitsReworked"]\
@@ -421,14 +511,14 @@ class inv_tools:
     # Inventory Deity =======================================================
     # Inventory god function, finds the parts you are looking for
     # and decides if a rework is needed
-    def inv_deity(self, model, demandqty):
+    def inv_deity(self, model, demandqty, period=1):
         print("\tDemand for", str(demandqty), model, '\n')
         # model is the terminal called out on demand
         # demandqty is the quantity of the terminal needed
         # checking to see if demandqty of part on hand is enough to satisfy
         # demand
         if self.maxreportaf(model) >= demandqty:
-            self.build(model, demandqty)
+            self.build(model, demandqty, period)
 
 
 class simulation:
@@ -436,19 +526,28 @@ class simulation:
         # np = how many times I want to run simulation
         # Demand information
         # {Terminal: [Forecast, Demand]}
-        self.demand = {'M6150': [300, 10],
-                       'M6150-01': [100, 10],
-                       'M6150-02': [100, 10],
-                       'M6150-03': [10, 300],
-                       'M6150-10': [100, 10]}
+        self.demand = {'M6150': [round(abs(random.normalvariate(700, 100)), 0),
+                                 round(abs(random.normalvariate(200, 200)), 0)],
+                       'M6150-01': [round(abs(random.normalvariate(400, 10)), 0),
+                                    round(abs(random.normalvariate(300, 50)), 0)],
+                       'M6150-02': [round(abs(random.normalvariate(0, 0)), 0),
+                                    round(abs(random.normalvariate(50, 10)), 0)],
+                       'M6150-03': [round(abs(random.normalvariate(20, 10)), 0),
+                                    round(abs(random.normalvariate(100, 10)), 0)],
+                       'M6150-10': [round(abs(random.normalvariate(0, 0)), 0),
+                                    round(abs(random.normalvariate(50, 10)), 0)]}
 
         self.np = np
         self.componentforecast = {}
 
+    def randint(self, mean, std):
+        pass
+
     # simulation for regular PAR
     def run(self, np):
+        # setting seed
+        random.seed(123)
         # np = number of periods I want to run simulation
-        # self.compforecast()
 
         p = 1
 
@@ -458,6 +557,7 @@ class simulation:
         f.inventoryset()
 
         while p <= np:
+            f.periodstats(p)
             print("\nPeriod:", str(p), "=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=\n\n\n")
 
             # running MRP function to see what needs to be added to inventory
@@ -469,7 +569,7 @@ class simulation:
 
                 print("\n", item, "\n\tForecast:", str(forecast),
                       "\n\tInventory:", str(f.oh_dict[item]), "\n")
-                f.mrp(item, forecast)
+                f.mrp(item, forecast, p)
 
             print("\n\n\n\nModeling Demand =============================== \n")
             for item in self.demand:
@@ -483,14 +583,22 @@ class simulation:
 
                 # now time for the real demand for the part
                 f.inv_god(item, demand)
+                f.periodstatsplot(p)
 
             p += 1
 
         f.inventorymetrics()
         print(json.dumps(f.costs))
+        print("printing period results")
+        print(f.periodresults)
+        print("Plotting data")
+        print(f.plotdata)
 
     # simulation for postponement/riskpooling PAR
     def run2(self, np):
+        # setting seed
+        random.seed(123)
+
         # np = number of periods I want to run simulation
         p = 1
 
@@ -498,8 +606,10 @@ class simulation:
         f = inv_tools("Something")
 
         f.inventoryset()
+        f.thechange()
 
         while p <= np:
+            f.periodstats(p)
             print("\nPeriod:", str(p), "=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=\n\n\n")
 
             # running MRP function to see what needs to be added to inventory
@@ -513,7 +623,7 @@ class simulation:
 
                 print(item, "\n\tForecast:", str(forecast),
                       "\n\tInventory:", str(inventory))
-            f.mrp2(self.demand)
+            f.mrp2(self.demand, p)
 
             print("\n\n\n\nModeling Demand =============================== \n")
             for item in self.demand:
@@ -527,8 +637,10 @@ class simulation:
 
                 # now time for the real demand for the part
                 f.inv_deity(item, demand)
+                f.periodstatsplot(p)
 
             p += 1
 
         f.inventorymetrics()
         print(json.dumps(f.costs))
+        print(f.plotdata)

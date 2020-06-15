@@ -15,15 +15,10 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
                         'Onedrive - PAR Technology Corporation',
                         'Demand Planning', 'AX Reports')
 
-# f = it.inv_tools("Instance")
-# r = it.rework("Instance")
 s = it.simulation("Instance")
 
 # simulation for regular PAR
 s.run(1)
 
 # simulation for postponement/riskpooling PAR
-s.run2(1)
-
-# save metrics in inventory.py?
-# print(f.costs)
+# s.run2(1)

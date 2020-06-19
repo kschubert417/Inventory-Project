@@ -17,8 +17,11 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
 
 s = it.simulation("Instance")
 
+# number of times you want to run a simulation
+n = 2
+
 # simulation for regular PAR
-s.run(1)
+s.run(n)
 
 # simulation for postponement/riskpooling PAR
-# s.run2(1)
+# s.run2(n)

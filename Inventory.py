@@ -20,7 +20,7 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
 s = it.simulation("Instance")
 
 # number of times you want to run a simulation
-n = 50
+n = 2
 
 # Simulation for PAR if it was run by Gorillas
 gorilla = s.run0(n)

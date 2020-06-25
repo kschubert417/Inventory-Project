@@ -69,6 +69,8 @@ class inv_tools:
         self.soptimalplot = {}
 
     # Tracking data throughout simulation ===================================
+    # using this as a container for each metric I want to track to aggregate
+    # and append into "plotdata" object
     def periodstats(self, Period, Stats=["Standard Freight Cost",
                                          "Standard Freight Units",
                                          "Premium Freight Cost",

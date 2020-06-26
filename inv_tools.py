@@ -138,6 +138,14 @@ class inv_tools:
                 print("\t\t\t", str(qty), component)
                 self.remove_inventory(component, qty)
 
+    # safety valve to send back unused units to POSBank
+    def compsafetyvalve(self, num):
+        for component in self.components:
+            qtyoh = self.oh_dict[component]
+            if qtyoh > num:
+                qtysendback = qtyoh - num
+                self.remove_inventory(component, qtysendback)
+
     # MAX REPORT AS FINISHED
     # will check to see how much of a part is available
     def maxreportaf(self, model):
@@ -557,6 +565,7 @@ class simulation:
                        'M6150-10': [10, 10]}
         '''
     # function to make forecast and demand for parts
+    # {Key: [Forecast, Demand]}
     def demandfc(self):
         self.demand = {'M6150': [round(abs(random.normal(700, 10)), 0),
                                  round(abs(random.normal(200, 200)), 0)],
@@ -667,6 +676,7 @@ class simulation:
 
                 # now time for the real demand for the part
                 f.inv_god(item, demand, p)
+                f.compsafetyvalve(800)
 
             f.periodstatsplot(p)
             p += 1
@@ -726,6 +736,7 @@ class simulation:
 
                 # now time for the real demand for the part
                 f.inv_deity(item, demand, p)
+                f.compsafetyvalve(800)
 
             f.periodstatsplot(p)
             p += 1

@@ -479,7 +479,7 @@ class inv_tools:
         else:
             # when demand is higher than inventory, add function in to
             # keep track of terminals I need to expedite in
-            print("\tNeed to rework... how could you let this happen?")
+            print("\tRework Required")
 
             # getting total quantity of terminals we are short
             qtyshort = demandqty - self.oh_dict[model]
@@ -565,7 +565,7 @@ class simulation:
                        'M6150-10': [10, 10]}
         '''
     # function to make forecast and demand for parts
-    # {Key: [Forecast, Demand]}
+    # {Part Number: [Forecast, Demand]}
     def demandfc(self):
         self.demand = {'M6150': [round(abs(random.normal(700, 10)), 0),
                                  round(abs(random.normal(200, 200)), 0)],

@@ -19,6 +19,11 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
 
 s = it.simulation("Instance")
 
+'''
+1) Interface to create BOM structures?
+    CSV, Flask Application for forms!
+'''
+
 # number of times you want to run a simulation
 n = int(input("Number of times to run simulation: "))
 

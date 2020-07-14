@@ -68,6 +68,11 @@ class inv_tools:
         self.semioptimalplot = {}
         self.soptimalplot = {}
 
+    # create function to load data from excel file
+    # clear function to overwrite data
+
+    # parent class to load ALL data
+
     # Tracking data throughout simulation ===================================
     # using this as a container for each metric I want to track to aggregate
     # and append into "plotdata" object
@@ -566,6 +571,7 @@ class simulation:
         '''
     # function to make forecast and demand for parts
     # {Part Number: [Forecast, Demand]}
+    # load demand from config file
     def demandfc(self):
         self.demand = {'M6150': [round(abs(random.normal(700, 10)), 0),
                                  round(abs(random.normal(200, 200)), 0)],

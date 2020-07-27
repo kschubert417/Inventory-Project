@@ -1,21 +1,36 @@
 import json
 import operator
+import numpy as np
+import pandas as pd
 from numpy import random
 
+import os, logging
+import logging.handlers
+from pathlib import Path
+
+
 # needs: ============================
-# tweak data structure
-# Assume monkeys run the business and remove reworks
+# https://realpython.com/python-testing/#testing-your-code
 
-# Assumptions =======================
-# 1) inventory like RAM, SSD, and Stands are in infinite supply. The purpose
-# of this model is to simulate how the supply chain can operate under the
-# different scenarios where the ES600 is a buy, make, and hybrid model
+class dataprep:
+    def setup(self):
+        # setting up logger
+        mdt = round(os.path.getmtime(os.path.basename(__file__)))
+        log_path = 'logs/'
+        Path(log_path).mkdir(parents=True, exist_ok=True)
 
+        log_file_name = log_path+'inv_test.log'
+        logging_level = logging.DEBUG
+        formatter = logging.Formatter('%(asctime)s, %(name)s, %(levelname)s, %(message)s')
+        handler = logging.handlers.TimedRotatingFileHandler(log_file_name, when='midnight', backupCount=365)
+        handler.suffix = "%Y-%m-%d"
 
-# Creating a "class" object
-class inv_tools:
-    def __init__(self, name):
-        self.name = name
+        handler.setFormatter(formatter)
+        self.logger = logging.getLogger('invtestlog')
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging_level)
+        self.logger.info("app: --------------------------------------------")
+        self.logger.info("app: init. v: " + str(mdt))
 
         # All terminals
         self.terminals = ['M6150', 'M6150-01', 'M6150-02', 'M6150-03',
@@ -36,12 +51,7 @@ class inv_tools:
                     'M6150-01': ['SSD.128GB', 'RAM.4GB', 'Stand'],
                     'M6150-02': ['SSD.64GB', 'RAM.8GB', 'Stand'],
                     'M6150-03': ['SSD.128GB', 'RAM.8GB', 'Stand'],
-                    'M6150-10': ['SSD.64GB', 'RAM.4GB'],
-                    'RAM.4GB': ['RAM.4GB'],  # '980027040'
-                    'RAM.8GB': ['RAM.8GB'],  # '980027040'
-                    'SSD.64GB': ['SSD.64GB'],  # '980027040'
-                    'SSD.128GB': ['SSD.128GB'],  # '980027040'
-                    'Stand': ['Stand']}  # '980027040'
+                    'M6150-10': ['SSD.64GB', 'RAM.4GB']}
 
         # create dictionary for cost types
         self.costs = {"Total Cost": 0,
@@ -68,10 +78,79 @@ class inv_tools:
         self.semioptimalplot = {}
         self.soptimalplot = {}
 
-    # create function to load data from excel file
-    # clear function to overwrite data
+    def loaddata(self):
+        self.setup()
 
-    # parent class to load ALL data
+        # file name of the config configfile
+        fn = "configfile.xlsx"
+        self.logger.info("loading data from " + fn)
+
+        itemmaster = pd.read_excel(fn, skiprows=1,
+                                   sheet_name="itemmaster")
+
+        # finding terminal/component part numbers
+        is_terminal = itemmaster['type'] == 'Terminal'
+        is_component = itemmaster['type'] == 'Component'
+
+        # getting all terminal/component info from item master
+        terminals = itemmaster[is_terminal]
+        components = itemmaster[is_component]
+
+        # getting list of terminals/components ================================
+        # ['item1', 'item2', 'item3', 'item4']
+        self.terminals = terminals['partnumber'].tolist()
+        self.components = components['partnumber'].tolist()
+
+        # creating dictionary for part values =================================
+        # {Item: Value}
+        self.values = dict(zip(itemmaster.partnumber, itemmaster.value))
+
+        # creating bom info ===================================================
+        # number of columns that contain BOM info I need
+        n = 3
+
+        # selecting columns I need to extract BOM info from
+        bominfo = terminals.iloc[:, np.r_[0, 7:7+n]]
+
+        # initialize dictionary
+        part_dict = {}
+
+        # slice all but the first column
+        columns = bominfo.columns[1:]
+
+        # {'Part1': ['Component1', 'Component2', 'Component3']}
+        for i in range(len(bominfo['partnumber'])):
+            # store given part as variable
+            part = bominfo['partnumber'][i]
+            # make dict entry and initialize empty list
+            part_dict[part] = []
+            for col in columns:
+                # append entry to list
+                part_dict[part].append(bominfo.at[i, col])
+
+        self.bom = part_dict
+
+        # getting demand info =================================================
+        # https://stackoverflow.com/questions/26716616/convert-a-pandas-dataframe-to-a-dictionary
+        # number of columns that contain demand info
+        n = 4
+
+        demandinfo = terminals.iloc[:, np.r_[0, 3:3+n]]
+
+        # {'Item1': [Forecastmean, Forecaststd, Demandmean, Demandstd]}
+        demandinfo = demandinfo.set_index('partnumber').T.to_dict('list')
+
+        # getting info to change simulation to a risk pooling based approach ==
+        configchange = pd.read_excel(fn, "simchange", skiprows=1)
+
+        # {'Part1': value}
+        self.change = dict(zip(configchange.partnumber, configchange.newvalue))
+
+
+# Creating a "class" object
+class inv_tools(dataprep):
+    def __init__(self):
+        self.loaddata()
 
     # Tracking data throughout simulation ===================================
     # using this as a container for each metric I want to track to aggregate
@@ -166,13 +245,13 @@ class inv_tools:
 
     # move items from components to terminals
     # used to help second simulation
-    def thechange(self, items=['RAM.4GB', 'RAM.8GB']):
+    def thechange(self, items={'RAM.4GB': 380, 'RAM.8GB': 451}):
         for i in items:
             # removing components and adding them to terminals
             self.components.remove(i)
             self.terminals += [i]
             # adjusting value to get the "shell" of terminal with ram
-            self.values[i] += 383
+            self.values[i] = items[i]
 
     # creating function to return desired inventory metrics
     # like total value, units on hand by type, etc
@@ -591,8 +670,7 @@ class simulation:
         p = 1
 
         # need to tell simulation I will need to call inv_tools
-        f = inv_tools("Something")
-
+        f = inv_tools()
         f.simset()
 
         while p <= np:
@@ -646,8 +724,7 @@ class simulation:
         p = 1
 
         # need to tell simulation I will need to call inv_tools
-        f = inv_tools("Something")
-
+        f = inv_tools()
         f.simset()
 
         while p <= np:
@@ -704,10 +781,9 @@ class simulation:
         p = 1
 
         # need to tell simulation I will need to call inv_tools
-        f = inv_tools("Something")
-
+        f = inv_tools()
         f.simset()
-        f.thechange()
+        f.thechange(f.change)
 
         while p <= np:
             f.periodstats(p)

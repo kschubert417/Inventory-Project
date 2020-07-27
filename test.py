@@ -1,20 +1,5 @@
-import pandas as pd
+import inv_tools
 
-file = pd.read_excel('configfile.xlsx', skiprows=1)
-print(file)
+i = inv_tools.inv_tools()
 
-# finding terminal/components
-is_terminal = file['type'] == 'Terminal'
-is_component = file['type'] == 'Component'
-
-terminals = file[is_terminal]['partnumber'].tolist()
-components = file[is_component]['partnumber'].tolist()
-
-# creating dictionary for part values
-values = dict(zip(file.partnumber, file.value))
-
-for i in file:
-    column = file[[i]]
-    for j in file[column]:
-        print("asdfasdf")
-        print(j)
+print(i.rework_comp("M6150", "M6150-10"))

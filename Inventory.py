@@ -1,8 +1,11 @@
 import os
+import inv_tools
 import socket as soc
-import inv_tools as it
+from importlib import reload
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
+reload(inv_tools)
 
 compname = soc.gethostname()
 
@@ -17,7 +20,7 @@ fle_path = os.path.join('C:\\', 'Users', cpu,
                         'Onedrive - PAR Technology Corporation',
                         'Demand Planning', 'AX Reports')
 
-s = it.simulation("Instance")
+s = inv_tools.simulation("Instance")
 
 '''
 1) Interface to create BOM structures?
@@ -43,6 +46,7 @@ optimal = s.run2(n)
 "Premium Freight Units",
 "Total Inventory"
 '''
+
 # plotting data =============================================================
 # Line Plots ===================================
 # Inventory Value

@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from numpy import random
 
-import os, logging
+import os
+import logging
 import logging.handlers
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from pathlib import Path
 
 class dataprep:
     def setup(self):
-        # setting up logger
+        # setting up logger ===================================================
         mdt = round(os.path.getmtime(os.path.basename(__file__)))
         log_path = 'logs/'
         Path(log_path).mkdir(parents=True, exist_ok=True)
@@ -32,6 +33,7 @@ class dataprep:
         self.logger.info("app: --------------------------------------------")
         self.logger.info("app: init. v: " + str(mdt))
 
+        # General information =================================================
         # All terminals
         self.terminals = ['M6150', 'M6150-01', 'M6150-02', 'M6150-03',
                           'M6150-10']
@@ -78,6 +80,7 @@ class dataprep:
         self.semioptimalplot = {}
         self.soptimalplot = {}
 
+    # function to load data from configfile
     def loaddata(self):
         self.setup()
 
@@ -140,6 +143,7 @@ class dataprep:
         # {'Item1': [Forecastmean, Forecaststd, Demandmean, Demandstd]}
         demandinfo = demandinfo.set_index('partnumber').T.to_dict('list')
 
+        # =====================================================================
         # getting info to change simulation to a risk pooling based approach ==
         configchange = pd.read_excel(fn, "simchange", skiprows=1)
 
@@ -190,69 +194,6 @@ class inv_tools(dataprep):
                    self.periodresults[period]["Premium Freight Cost"] +
                    self.periodresults[period]["Total Inventory"])
 
-    # INVENTORY FUNCTIONS ===================================================
-    # function to reset inventory before each simulation run need to turn
-    # inventory to zero after first (non-optimized) simulation is run
-    def simset(self):
-        self.rework_order = {}
-        self.rework_labor = {}
-        self.periodresults = {}
-        for item in self.bom:
-            self.oh_dict[item] = 0
-            for component in self.bom[item]:
-                self.oh_dict[component] = 0
-        self.costs = {"Total Cost": 0,
-                      "Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
-                                  "Premium": {"Cost": 0.0, "Qty": 0.0}},
-                      "Manufacturing": {"ReworkLabor": 0.0,
-                                        "UnitsReworked": 0.0},
-                      "Inventory": {}}
-
-    def build(self, model, qty, period):
-        print("\t\t\tBuilding", model, "with:")
-        for component in self.bom[model]:
-            onhand = self.oh_dict[component]
-            if qty > onhand:
-                orderqty = qty - onhand
-                self.freight(component, orderqty, "Premium", period)
-                self.add_inventory(component, orderqty)
-                print("\t\t\t", str(qty), component)
-                self.remove_inventory(component, qty)
-            else:
-                print("\t\t\t", str(qty), component)
-                self.remove_inventory(component, qty)
-
-    # safety valve to send back unused units to POSBank
-    def compsafetyvalve(self, num):
-        for component in self.components:
-            qtyoh = self.oh_dict[component]
-            if qtyoh > num:
-                qtysendback = qtyoh - num
-                self.remove_inventory(component, qtysendback)
-
-    # MAX REPORT AS FINISHED
-    # will check to see how much of a part is available
-    def maxreportaf(self, model):
-        max = 0
-        counter = 1
-        for component in self.bom[model]:
-            ohqty = self.oh_dict[component]
-            if counter == 1:
-                max = ohqty
-            elif ohqty < max:
-                max = ohqty
-        return(max)
-
-    # move items from components to terminals
-    # used to help second simulation
-    def thechange(self, items={'RAM.4GB': 380, 'RAM.8GB': 451}):
-        for i in items:
-            # removing components and adding them to terminals
-            self.components.remove(i)
-            self.terminals += [i]
-            # adjusting value to get the "shell" of terminal with ram
-            self.values[i] = items[i]
-
     # creating function to return desired inventory metrics
     # like total value, units on hand by type, etc
     def inventorymetrics(self):
@@ -270,6 +211,112 @@ class inv_tools(dataprep):
         self.costs["Total Cost"] += self.costs['Freight']["Premium"]["Cost"]
         self.costs["Total Cost"] += self.costs['Manufacturing']["ReworkLabor"]
         self.costs["Total Cost"] += self.costs['Inventory']["Inventory Value"]
+
+    def simset(self):
+        self.rework_order = {}
+        self.rework_labor = {}
+        self.periodresults = {}
+        for item in self.bom:
+            self.oh_dict[item] = 0
+            for component in self.bom[item]:
+                self.oh_dict[component] = 0
+        self.costs = {"Total Cost": 0,
+                      "Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
+                                  "Premium": {"Cost": 0.0, "Qty": 0.0}},
+                      "Manufacturing": {"ReworkLabor": 0.0,
+                                        "UnitsReworked": 0.0},
+                      "Inventory": {}}
+
+    # move items from components to terminals
+    # used to help second simulation
+    def thechange(self, items={'RAM.4GB': 380, 'RAM.8GB': 451}):
+        for i in items:
+            # removing components and adding them to terminals
+            self.components.remove(i)
+            self.terminals += [i]
+            # adjusting value to get the "shell" of terminal with ram
+            self.values[i] = items[i]
+
+    # INVENTORY FUNCTIONS ===================================================
+    # function to reset inventory before each simulation run need to turn
+    # inventory to zero after first (non-optimized) simulation is run
+    # function to add inventory
+    def add_inventory(self, part, qty):
+        if part in self.oh_dict.keys():
+            self.oh_dict[part] += qty
+        else:
+            self.oh_dict[part] = qty
+
+    # function to reduce inventory
+    def remove_inventory(self, part, qty):
+        # checking to see if we can't remove inventory
+        if self.oh_dict[part] > 0:
+            self.oh_dict[part] -= qty
+
+    # function to take forecasted quantity, subtract current inventory from
+    # it and add the difference to inventory
+    # ex: if inventory > forecast, do not need to order more inventory
+    def mrp(self, part, forecast, period):
+        if part in self.oh_dict.keys():
+            inventory = self.oh_dict[part]
+            if forecast > inventory:
+                qty = forecast - inventory
+                self.add_inventory(part, qty)
+                print("\tAdding ", str(qty), part, "to inventory")
+                self.freight(part, qty, 'Standard', period)
+            else:
+                print("\tInventory enough to cover forecast\n\n")
+        else:
+            self.oh_dict[part] = forecast
+
+    # function to go through all parts forecast and add components to inventory
+    def mrp2(self, demanddict, period):
+        compforecast = {}
+        for terminal in demanddict:
+            # forecast quantity for terminal
+            fcqty = demanddict[terminal][0]
+            for component in self.bom[terminal]:
+                if component in compforecast.keys():
+                    compforecast[component] += fcqty
+                else:
+                    compforecast[component] = fcqty
+        for component in compforecast:
+            self.mrp(component, compforecast[component], period)
+
+    # safety valve to send back unused units to POSBank
+    def compsafetyvalve(self, num):
+        for component in self.components:
+            qtyoh = self.oh_dict[component]
+            if qtyoh > num:
+                qtysendback = qtyoh - num
+                self.remove_inventory(component, qtysendback)
+
+    def build(self, model, qty, period):
+        print("\t\t\tBuilding", model, "with:")
+        for component in self.bom[model]:
+            onhand = self.oh_dict[component]
+            if qty > onhand:
+                orderqty = qty - onhand
+                self.freight(component, orderqty, "Premium", period)
+                self.add_inventory(component, orderqty)
+                print("\t\t\t", str(qty), component)
+                self.remove_inventory(component, qty)
+            else:
+                print("\t\t\t", str(qty), component)
+                self.remove_inventory(component, qty)
+
+    # MAX REPORT AS FINISHED
+    # will check to see how much of a part is available
+    def maxreportaf(self, model):
+        max = 0
+        counter = 1
+        for component in self.bom[model]:
+            ohqty = self.oh_dict[component]
+            if counter == 1:
+                max = ohqty
+            elif ohqty < max:
+                max = ohqty
+        return(max)
 
     # Need to figure freight out... and net/average inventory
     def freight(self, Itemnumber, Qty, Freighttype, Period):
@@ -325,68 +372,9 @@ class inv_tools(dataprep):
                     standardfreight * Qty
                 self.periodresults[Period]["Standard Freight Units"] += Qty
 
-    # function to add inventory
-    def add_inventory(self, part, qty):
-        if part in self.oh_dict.keys():
-            self.oh_dict[part] += qty
-        else:
-            self.oh_dict[part] = qty
-
-    # function to reduce inventory
-    def remove_inventory(self, part, qty):
-        # checking to see if we can't remove inventory
-        if self.oh_dict[part] > 0:
-            self.oh_dict[part] -= qty
-
-    # function to take forecasted quantity, subtract current inventory from
-    # it and add the difference to inventory
-    # ex: if inventory > forecast, do not need to order more inventory
-    def mrp(self, part, forecast, period):
-        if part in self.oh_dict.keys():
-            inventory = self.oh_dict[part]
-            if forecast > inventory:
-                qty = forecast - inventory
-                self.add_inventory(part, qty)
-                print("\tAdding ", str(qty), part, "to inventory")
-                self.freight(part, qty, 'Standard', period)
-            else:
-                print("\tInventory enough to cover forecast\n\n")
-        else:
-            self.oh_dict[part] = forecast
-
-    # function to go through all parts forecast and add components to inventory
-    def mrp2(self, demanddict, period):
-        compforecast = {}
-        for terminal in demanddict:
-            # forecast quantity for terminal
-            fcqty = demanddict[terminal][0]
-            for component in self.bom[terminal]:
-                if component in compforecast.keys():
-                    compforecast[component] += fcqty
-                else:
-                    compforecast[component] = fcqty
-        for component in compforecast:
-            self.mrp(component, compforecast[component], period)
-
-    # creating function that adds all necessary parts into/out of inventory
-    # from rework info
+    # creating function that will add/remove parts from inventory as necessary
+    # to perform reworks
     def get_gainz(self, have, need, qty, period):  # rework
-        """
-        Parameters
-        ----------
-        have : type
-            The part we have available for rework
-        need : type
-            The item we need to turn the part we "have" into
-        qty : type
-            Qty of the part we are reworking
-
-        Returns
-        -------
-        type
-            Description of returned object.
-        """
-        # self.rework_comp(have, need)
         rework = self.rework_comp(have, need)
         # removing inventory needed to perform rework
         for i in rework["In"]:
@@ -416,38 +404,25 @@ class inv_tools(dataprep):
         comp_in = {}
         comp_out = {}
 
-        # checking length of the BOM for terminal to see if stand is needed
-        if len(have) > len(need):
-            comp_out["Stand"] = "Stand"
-        elif len(have) < len(need):
-            comp_in["Stand"] = "Stand"
-        else:
-            pass
-
         # find components needed to take out of terminal
         counter = 1
         for component in need:
             if component not in have:
-                if counter == 1:
-                    comp_in['HD'] = component
-                elif counter == 2:
-                    comp_in['RAM'] = component
+                comp_in['Component' + '' + str(counter)] = component
             counter += 1
 
         # find components needed to take out of terminal
         counter = 1
         for component in have:
             if component not in need:
-                if counter == 1:
-                    comp_out['HD'] = component
-                if counter == 2:
-                    comp_out['RAM'] = component
+                comp_out['Component' + '' + str(counter)] = component
             counter += 1
 
         return({"In": comp_in, "Out": comp_out})
-        # self.rework_in_out = {"In": comp_in, "Out": comp_out}
-        # {In: {HD: SSD#, RAM: RAM#, Stand: Stand},
-        # Out: {HD: SSD#, RAM: RAM#, Stand: Stand}}
+        # {In: {Component #: SSD.XXXXX, Component #: RAM.XXXXX,
+        #       Component #: Stand},
+        # Out: {Component #: SSD.XXXXX, Component #: RAM.XXXXX,
+        #       Component #: Stand}}
 
     # Will find parts needed to put into and take out of terminal if needed
     # returns the score needed to rework each terminal we have into the

@@ -1,40 +1,93 @@
-2020-07-27 16:57:26,820, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 16:57:26,820, invtestlog, INFO, app: Server init. v: 1595883442
-2020-07-27 16:58:35,679, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 16:58:35,679, invtestlog, INFO, app: Server init. v: 1595883511
-2020-07-27 17:01:29,315, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,315, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,315, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:01:29,357, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,357, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,358, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,358, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,358, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:01:29,358, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:01:29,384, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,384, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,384, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:01:29,384, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,384, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,384, invtestlog, INFO, app: Server init. v: 1595883678
-2020-07-27 17:01:29,385, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:01:29,385, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:01:29,385, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,130, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,130, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,130, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,172, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,172, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,173, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,173, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,173, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,173, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,199, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,199, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,199, invtestlog, INFO, app: --------------------------------------------
-2020-07-27 17:03:21,199, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,199, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,199, invtestlog, INFO, app: init. v: 1595883797
-2020-07-27 17:03:21,200, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,200, invtestlog, INFO, loading data from configfile.xlsx
-2020-07-27 17:03:21,200, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 08:04:17,001, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 08:04:17,005, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 08:04:17,005, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 08:04:49,226, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 08:04:49,227, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 08:04:49,227, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 08:04:56,831, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 08:04:56,831, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 08:04:56,832, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 18:05:46,561, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 18:05:46,561, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 18:05:46,561, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 18:06:34,344, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 18:06:34,345, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 18:06:34,345, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 18:52:23,181, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 18:52:23,181, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 18:52:23,181, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 18:54:21,617, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 18:54:21,618, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 18:54:21,618, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:04:35,914, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:04:35,914, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 19:04:35,914, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:25:20,924, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:25:20,924, invtestlog, INFO, app: init. v: 1595889476
+2020-07-29 19:25:20,925, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:25:27,835, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:25:27,835, invtestlog, INFO, app: init. v: 1596065125
+2020-07-29 19:25:27,835, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:25:37,427, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:25:37,427, invtestlog, INFO, app: init. v: 1596065125
+2020-07-29 19:25:37,427, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:27:04,577, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:27:04,577, invtestlog, INFO, app: init. v: 1596065125
+2020-07-29 19:27:04,577, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:44:16,232, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:44:16,232, invtestlog, INFO, app: init. v: 1596066254
+2020-07-29 19:44:16,232, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:44:25,401, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:44:25,401, invtestlog, INFO, app: init. v: 1596066263
+2020-07-29 19:44:25,401, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:45:51,385, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:45:51,385, invtestlog, INFO, app: init. v: 1596066349
+2020-07-29 19:45:51,385, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:46:20,903, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:46:20,904, invtestlog, INFO, app: init. v: 1596066378
+2020-07-29 19:46:20,904, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:46:31,719, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:46:31,720, invtestlog, INFO, app: init. v: 1596066389
+2020-07-29 19:46:31,720, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:46:54,613, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:46:54,613, invtestlog, INFO, app: init. v: 1596066389
+2020-07-29 19:46:54,613, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:49:31,369, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:49:31,370, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:49:31,370, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:00,656, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:00,657, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:00,657, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:00,833, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:00,833, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:00,833, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:00,833, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:00,834, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:00,834, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:01,044, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:01,044, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:01,044, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:01,045, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:01,045, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:01,045, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:01,046, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:01,046, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:01,046, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:53:23,729, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:53:23,730, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:53:23,730, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 19:59:47,223, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 19:59:47,224, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 19:59:47,224, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 20:01:42,000, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 20:01:42,001, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 20:01:42,001, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 20:36:22,059, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 20:36:22,060, invtestlog, INFO, app: init. v: 1596066569
+2020-07-29 20:36:22,060, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 20:36:26,836, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 20:36:26,837, invtestlog, INFO, app: init. v: 1596069385
+2020-07-29 20:36:26,837, invtestlog, INFO, loading data from configfile.xlsx
+2020-07-29 20:36:35,739, invtestlog, INFO, app: --------------------------------------------
+2020-07-29 20:36:35,739, invtestlog, INFO, app: init. v: 1596069385
+2020-07-29 20:36:35,740, invtestlog, INFO, loading data from configfile.xlsx

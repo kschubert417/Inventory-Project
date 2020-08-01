@@ -99,12 +99,6 @@ part1 = "M6150"
 part2 = "M6150-03"
 n = 5
 
-print("\nTesting maxreportaf", part1, sep=' ')
-print(i.maxreportaf(part1))
-
-print("\nTesting build function", n, part1, sep=' ')
-i.build(part1, n, 1)
-
 # testing rework function
 # *****note******: need to make work with stand/nostand terminals
 print("\nTesting rework_rank for", part1, sep=' ')
@@ -117,3 +111,9 @@ print(i.rework_comp(part, part2))
 print("\nTesting Get_Gainz function by reworking",
       part1, "into", part2, sep=' ')
 i.get_gainz(part1, part2, n, 1)
+
+print("\nTesting maxreportaf", part1, sep=' ')
+print(i.maxreportaf(part1))
+
+print("\nTesting build function", n, part1, sep=' ')
+i.build(part1, n, 1)

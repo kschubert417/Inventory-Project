@@ -22,8 +22,11 @@ class dataprep:
 
         log_file_name = log_path+'inv_test.log'
         logging_level = logging.DEBUG
-        formatter = logging.Formatter('%(asctime)s, %(name)s, %(levelname)s, %(message)s')
-        handler = logging.handlers.TimedRotatingFileHandler(log_file_name, when='midnight', backupCount=365)
+        formatter = logging.Formatter('''%(asctime)s,
+                                      %(name)s, %(levelname)s, %(message)s''')
+        handler = logging.handlers.TimedRotatingFileHandler(log_file_name,
+                                                            when='midnight',
+                                                            backupCount=365)
         handler.suffix = "%Y-%m-%d"
 
         handler.setFormatter(formatter)
@@ -72,10 +75,10 @@ class dataprep:
 
         self.oh_dict = {}
         self.rework_order = {}
-        self.rework_labor = {}
         self.periodresults = {}
+        self.demandinfo = {}
 
-        # Different containers for simulations
+        # Different containers for simulation plots
         self.unoptimalplot = {}
         self.semioptimalplot = {}
         self.soptimalplot = {}
@@ -110,10 +113,15 @@ class dataprep:
 
         # creating bom info ===================================================
         # number of columns that contain BOM info I need
-        n = 3
+
+        # counting number of columns where BOMs live
+        bomcount = 0
+        for i in itemmaster:
+            if "bom" in i:
+                bomcount += 1
 
         # selecting columns I need to extract BOM info from
-        bominfo = terminals.iloc[:, np.r_[0, 7:7+n]]
+        bominfo = terminals.iloc[:, np.r_[0, 7:7+bomcount]]
 
         # initialize dictionary
         part_dict = {}
@@ -140,8 +148,8 @@ class dataprep:
 
         demandinfo = terminals.iloc[:, np.r_[0, 3:3+n]]
 
-        # {'Item1': [Forecastmean, Forecaststd, Demandmean, Demandstd]}
-        demandinfo = demandinfo.set_index('partnumber').T.to_dict('list')
+        # {'Item': [Forecastmean, Forecaststd, Demandmean, Demandstd]}
+        self.demandinfo = demandinfo.set_index('partnumber').T.to_dict('list')
 
         # =====================================================================
         # getting info to change simulation to a risk pooling based approach ==
@@ -209,12 +217,10 @@ class inv_tools(dataprep):
         # total cost
         self.costs["Total Cost"] += self.costs['Freight']["Standard"]["Cost"]
         self.costs["Total Cost"] += self.costs['Freight']["Premium"]["Cost"]
-        self.costs["Total Cost"] += self.costs['Manufacturing']["ReworkLabor"]
         self.costs["Total Cost"] += self.costs['Inventory']["Inventory Value"]
 
     def simset(self):
         self.rework_order = {}
-        self.rework_labor = {}
         self.periodresults = {}
         for item in self.bom:
             self.oh_dict[item] = 0
@@ -223,8 +229,7 @@ class inv_tools(dataprep):
         self.costs = {"Total Cost": 0,
                       "Freight": {"Standard": {"Cost": 0.0, "Qty": 0.0},
                                   "Premium": {"Cost": 0.0, "Qty": 0.0}},
-                      "Manufacturing": {"ReworkLabor": 0.0,
-                                        "UnitsReworked": 0.0},
+                      "Manufacturing": {"UnitsReworked": 0.0},
                       "Inventory": {}}
 
     # move items from components to terminals
@@ -428,11 +433,8 @@ class inv_tools(dataprep):
     # returns the score needed to rework each terminal we have into the
     # terminal we need
     def rework_rank(self, term_need):  # rework
-        # different scores, higher means more difficulty/labor required
+        # different scores, higher means more difficulty required
         stand_score, ssd_score, ram_score = 2, 5, 10
-
-        # going to add cost of labor in as well
-        stand_labor, ssd_labor, ram_labor = 10, 5, 20
 
         hw_need = self.bom[term_need]
 
@@ -444,7 +446,6 @@ class inv_tools(dataprep):
                 if len(self.bom[terminal]) == 3 and terminal != term_need:
                     counter = 0
                     score = 0
-                    labor = 0
                     # def getscore(self, terminal)
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
@@ -452,39 +453,31 @@ class inv_tools(dataprep):
                         if components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
-                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
-                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
-                    self.rework_labor[terminal] = labor
 
                 # Creating seperate conditions for terminals with no stand
                 # BOM has only a length of 2
                 elif len(self.bom[terminal]) == 2 and terminal != term_need:
                     counter = 0
                     score = stand_score
-                    labor = stand_labor
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
                         # add in and for the rework
                         if components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
-                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
-                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
-                    self.rework_labor[terminal] = labor
         else:
             for terminal in self.bom:
                 if len(self.bom[terminal]) == 3 and terminal != term_need:
                     counter = 0
                     score = stand_score
-                    labor = stand_labor
                     for components in self.bom[terminal]:
                         # Any component not in BOM is something I will need to
                         # add in and for the rework.
@@ -493,15 +486,44 @@ class inv_tools(dataprep):
                         elif components != hw_need[counter]:
                             if "SSD" in components:
                                 score += ssd_score
-                                labor += ssd_labor
                             elif "RAM" in components:
                                 score += ram_score
-                                labor += ram_labor
                         counter += 1
                     self.rework_order[score] = terminal
-                    self.rework_labor[terminal] = labor
         # self.rework_order = {score: terminal}
-        # self.rework_labor = {terminal: labor}
+
+
+    # Will find parts needed to put into and take out of terminal if needed
+    # returns the score needed to rework each terminal we have into the
+    # terminal we need
+    def rework_rank2(self, term_need):  # rework
+
+        hw_need = self.bom[term_need]
+
+        # want to create an algorithm that "weighs" the different terminals
+        # I can reconfigure from, lower number will be less difficult to
+        # rework than higher numbers
+        if len(hw_need) == 3:
+            for terminal in self.bom:
+                if terminal != term_need:
+                    print(terminal)
+                    counter = 1
+                    score = 0
+                    # def getscore(self, terminal)
+                    for components in self.bom[terminal]:
+                        print(components + " " + str(counter))
+                        # Any component not in BOM is something I will need to
+                        # add in and for the rework.
+                        if components != hw_need[counter-1]:
+                            score += counter
+                        counter += 1
+                    self.rework_order[score] = terminal
+                else:
+                    pass
+
+        # self.rework_order = {score: terminal}
+
+
 
     # SIMULATION BRAINS ======================================================
     # Inventory Gorilla, this guy just listens to what is cooking inside the
@@ -550,7 +572,7 @@ class inv_tools(dataprep):
             self.remove_inventory(model, self.oh_dict[model])
 
             # sorting rework order from least to most difficult
-            self.rework_rank(model)
+            self.rework_rank2(model)
             order = sorted(self.rework_order.items(),
                            key=operator.itemgetter(0))
 
@@ -571,8 +593,6 @@ class inv_tools(dataprep):
                             # adding associated rework costs to dictionary
                             self.costs["Manufacturing"]["UnitsReworked"]\
                                 += qtyshort
-                            self.costs["Manufacturing"]["ReworkLabor"]\
-                                += qtyshort * self.rework_labor[terminal]
 
                             # decrementing total quantity short
                             qtyshort -= qtyshort
@@ -585,8 +605,6 @@ class inv_tools(dataprep):
                             # adding associated rework costs to dictionary
                             self.costs["Manufacturing"]["UnitsReworked"]\
                                 += ohqty
-                            self.costs["Manufacturing"]["ReworkLabor"]\
-                                += ohqty * self.rework_labor[terminal]
 
                             # decrementing total quantity short
                             qtyshort -= ohqty
@@ -612,31 +630,30 @@ class inv_tools(dataprep):
 class simulation:
     def __init__(self, np):
         # np = how many times I want to run simulation
-        # Demand information
 
-        # {Terminal: [Forecast, Demand]}
+        # {PartNumber: [Forecast, Demand]}
         self.demand = {}
-        '''
-        self.demand = {'M6150': [10, 100],
-                       'M6150-01': [10, 10],
-                       'M6150-02': [10, 10],
-                       'M6150-03': [10, 10],
-                       'M6150-10': [10, 10]}
-        '''
+
     # function to make forecast and demand for parts
-    # {Part Number: [Forecast, Demand]}
-    # load demand from config file
-    def demandfc(self):
-        self.demand = {'M6150': [round(abs(random.normal(700, 10)), 0),
-                                 round(abs(random.normal(200, 200)), 0)],
-                       'M6150-01': [round(abs(random.normal(400, 10)), 0),
-                                    round(abs(random.normal(600, 150)), 0)],
-                       'M6150-02': [round(abs(random.normal(0, 0)), 0),
-                                    round(abs(random.normal(50, 10)), 0)],
-                       'M6150-03': [round(abs(random.normal(200, 10)), 0),
-                                    round(abs(random.normal(100, 10)), 0)],
-                       'M6150-10': [round(abs(random.normal(0, 0)), 0),
-                                    round(abs(random.normal(50, 10)), 0)]}
+    # {PartNumber: [Forecast, Demand]}
+    def demandfc(self, demandinfo):
+        self.demand = {}
+        for item in demandinfo:
+            part = item
+
+            # forecast stats (mean and standard deviation)
+            fcmean = demandinfo[item][0]
+            fcstd = demandinfo[item][1]
+
+            # demand stats (mean and standard deviation)
+            dmndmean = demandinfo[item][2]
+            dmndstd = demandinfo[item][3]
+
+            # getting forecast from demand data
+            forecast = round(abs(random.normal(fcmean, fcstd)))
+            demand = round(abs(random.normal(dmndmean, dmndstd)))
+
+            self.demand[part] = [forecast, demand]
 
     # Simulation for PAR if it was run by Gorillas
     def run0(self, np):
@@ -646,6 +663,8 @@ class simulation:
 
         # need to tell simulation I will need to call inv_tools
         f = inv_tools()
+
+        # making sure simulation starts at absolute 0
         f.simset()
 
         while p <= np:
@@ -655,7 +674,8 @@ class simulation:
             # setting random variables at the beginning of each iteration
             # {Terminal: [Forecast,
             #             Demand]}
-            self.demandfc()
+            # self.demandfc()
+            self.demandfc(f.demandinfo)
 
             # running MRP function to see what needs to be added to inventory
             # first
@@ -700,6 +720,8 @@ class simulation:
 
         # need to tell simulation I will need to call inv_tools
         f = inv_tools()
+
+        # making sure simulation starts at absolute 0
         f.simset()
 
         while p <= np:
@@ -709,7 +731,8 @@ class simulation:
             # setting random variables at the beginning of each iteration
             # {Terminal: [Forecast,
             #             Demand]}
-            self.demandfc()
+            # self.demandfc()
+            self.demandfc(f.demandinfo)
 
             # running MRP function to see what needs to be added to inventory
             # first
@@ -757,6 +780,8 @@ class simulation:
 
         # need to tell simulation I will need to call inv_tools
         f = inv_tools()
+
+        # making sure simulation starts at absolute 0
         f.simset()
         f.thechange(f.change)
 
@@ -766,7 +791,8 @@ class simulation:
 
             # setting random variables at the beginning of each iteration
             # {Terminal: [Forecast, Demand]}
-            self.demandfc()
+            # self.demandfc()
+            self.demandfc(f.demandinfo)
 
             # running MRP function to see what needs to be added to inventory
             # first

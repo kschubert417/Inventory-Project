@@ -3,7 +3,7 @@ import inv_tools
 i = inv_tools.inv_tools()
 
 
-# setting up plot to make some functions work better
+# setting up period stats to make some functions work better
 i.periodstats(1)
 
 
@@ -12,9 +12,6 @@ print("\nPrinting Terminals:")
 print(i.terminals)
 
 print("\nPrinting Components:")
-print(i.components)
-
-print("\n\nPrinting Components:")
 print(i.components)
 
 print("\nPrinting Values:")
@@ -102,7 +99,7 @@ n = 5
 # testing rework function
 # *****note******: need to make work with stand/nostand terminals
 print("\nTesting rework_rank for", part1, sep=' ')
-i.rework_rank(part1)
+i.rework_rank2(part1)
 print(i.rework_order)
 
 print("\nTesting rework_comp, getting components that need to come in and out")

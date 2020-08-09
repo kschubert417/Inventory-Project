@@ -31,10 +31,10 @@ s = inv_tools.simulation("Instance")
 n = int(input("Number of times to run simulation: "))
 
 # Simulation for PAR if it was run by Gorillas
-gorilla = s.run0(n)
+# gorilla = s.run0(n)
 
 # simulation for regular PAR
-semioptimal = s.run1(n)
+# semioptimal = s.run1(n)
 
 # simulation for postponement/riskpooling PAR
 optimal = s.run2(n)
@@ -46,7 +46,7 @@ optimal = s.run2(n)
 "Premium Freight Units",
 "Total Inventory"
 '''
-
+'''
 # plotting data =============================================================
 # Line Plots ===================================
 # Inventory Value
@@ -162,3 +162,4 @@ fig.update_layout(title='Total Cost',
                   yaxis_title='Value')
 
 fig.show()
+'''

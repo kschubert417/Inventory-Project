@@ -99,8 +99,8 @@ n = 5
 # testing rework function
 # *****note******: need to make work with stand/nostand terminals
 print("\nTesting rework_rank for", part1, sep=' ')
-i.rework_rank2(part1)
-print(i.rework_order)
+print(i.rework_rank(part1))
+
 
 print("\nTesting rework_comp, getting components that need to come in and out")
 print(i.rework_comp(part, part2))

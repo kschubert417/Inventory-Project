@@ -74,7 +74,6 @@ class dataprep:
                          "Total Cost": []}
 
         self.oh_dict = {}
-        self.rework_order = {}
         self.periodresults = {}
         self.demandinfo = {}
 
@@ -220,7 +219,6 @@ class inv_tools(dataprep):
         self.costs["Total Cost"] += self.costs['Inventory']["Inventory Value"]
 
     def simset(self):
-        self.rework_order = {}
         self.periodresults = {}
         for item in self.bom:
             self.oh_dict[item] = 0
@@ -433,95 +431,29 @@ class inv_tools(dataprep):
     # returns the score needed to rework each terminal we have into the
     # terminal we need
     def rework_rank(self, term_need):  # rework
-        # different scores, higher means more difficulty required
-        stand_score, ssd_score, ram_score = 2, 5, 10
-
+        rework_order = {}
         hw_need = self.bom[term_need]
 
         # want to create an algorithm that "weighs" the different terminals
         # I can reconfigure from, lower number will be less difficult to
         # rework than higher numbers
-        if len(hw_need) == 3:
-            for terminal in self.bom:
-                if len(self.bom[terminal]) == 3 and terminal != term_need:
-                    counter = 0
-                    score = 0
-                    # def getscore(self, terminal)
-                    for components in self.bom[terminal]:
-                        # Any component not in BOM is something I will need to
-                        # add in and for the rework.
-                        if components != hw_need[counter]:
-                            if "SSD" in components:
-                                score += ssd_score
-                            elif "RAM" in components:
-                                score += ram_score
-                        counter += 1
-                    self.rework_order[score] = terminal
+        for terminal in self.bom:
+            if terminal != term_need:
+                counter = 1
+                score = 0
+                # def getscore(self, terminal)
+                for components in self.bom[terminal]:
+                    # Any component not in BOM is something I will need to
+                    # add in and for the rework.
+                    if components != hw_need[counter-1]:
+                        score += counter
+                    counter += 1
+                rework_order[score] = terminal
+            else:
+                pass
 
-                # Creating seperate conditions for terminals with no stand
-                # BOM has only a length of 2
-                elif len(self.bom[terminal]) == 2 and terminal != term_need:
-                    counter = 0
-                    score = stand_score
-                    for components in self.bom[terminal]:
-                        # Any component not in BOM is something I will need to
-                        # add in and for the rework
-                        if components != hw_need[counter]:
-                            if "SSD" in components:
-                                score += ssd_score
-                            elif "RAM" in components:
-                                score += ram_score
-                        counter += 1
-                    self.rework_order[score] = terminal
-        else:
-            for terminal in self.bom:
-                if len(self.bom[terminal]) == 3 and terminal != term_need:
-                    counter = 0
-                    score = stand_score
-                    for components in self.bom[terminal]:
-                        # Any component not in BOM is something I will need to
-                        # add in and for the rework.
-                        if counter == 2:
-                            pass
-                        elif components != hw_need[counter]:
-                            if "SSD" in components:
-                                score += ssd_score
-                            elif "RAM" in components:
-                                score += ram_score
-                        counter += 1
-                    self.rework_order[score] = terminal
-        # self.rework_order = {score: terminal}
-
-
-    # Will find parts needed to put into and take out of terminal if needed
-    # returns the score needed to rework each terminal we have into the
-    # terminal we need
-    def rework_rank2(self, term_need):  # rework
-
-        hw_need = self.bom[term_need]
-
-        # want to create an algorithm that "weighs" the different terminals
-        # I can reconfigure from, lower number will be less difficult to
-        # rework than higher numbers
-        if len(hw_need) == 3:
-            for terminal in self.bom:
-                if terminal != term_need:
-                    print(terminal)
-                    counter = 1
-                    score = 0
-                    # def getscore(self, terminal)
-                    for components in self.bom[terminal]:
-                        print(components + " " + str(counter))
-                        # Any component not in BOM is something I will need to
-                        # add in and for the rework.
-                        if components != hw_need[counter-1]:
-                            score += counter
-                        counter += 1
-                    self.rework_order[score] = terminal
-                else:
-                    pass
-
-        # self.rework_order = {score: terminal}
+        return(rework_order)
+        # rework_order = {score: terminal}
 
 
 
@@ -572,8 +504,8 @@ class inv_tools(dataprep):
             self.remove_inventory(model, self.oh_dict[model])
 
             # sorting rework order from least to most difficult
-            self.rework_rank2(model)
-            order = sorted(self.rework_order.items(),
+            rework_order = self.rework_rank(model)
+            order = sorted(rework_order.items(),
                            key=operator.itemgetter(0))
 
             print("\tQty left:", str(qtyshort), "\n")

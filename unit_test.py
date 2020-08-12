@@ -97,7 +97,6 @@ part2 = "M6150-03"
 n = 5
 
 # testing rework function
-# *****note******: need to make work with stand/nostand terminals
 print("\nTesting rework_rank for", part1, sep=' ')
 print(i.rework_rank(part1))
 
@@ -114,3 +113,15 @@ print(i.maxreportaf(part1))
 
 print("\nTesting build function", n, part1, sep=' ')
 i.build(part1, n, 1)
+
+
+print("\n\nTesting Simulations functions ====================================")
+# number of times to run the simulation
+n = 5
+gorilla = i.run0(n)
+
+# simulation for regular PAR
+semioptimal = i.run1(n)
+
+# simulation for postponement/riskpooling PAR
+optimal = i.run2(n)

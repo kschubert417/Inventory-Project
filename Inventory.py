@@ -69,13 +69,13 @@ fig.show()
 # Standard Freight Cost
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 fig.add_trace(go.Scatter(y=gorilla["Standard Freight Cost"],
-                         mode='lines', name='Oversimplified Inventory Value'),
+                         mode='lines', name='Oversimplified Freight Cost'),
               secondary_y=False)
 fig.add_trace(go.Scatter(y=semioptimal["Standard Freight Cost"],
-                         mode='lines', name='Semi-Optimal Inventory Value'),
+                         mode='lines', name='Semi-Optimal Freight Cost'),
               secondary_y=False)
 fig.add_trace(go.Scatter(y=optimal["Standard Freight Cost"],
-                         mode='lines', name='Optimal Inventory Value'),
+                         mode='lines', name='Optimal Freight Cost'),
               secondary_y=False)
 fig.update_layout(title='Standard Freight Cost',
                   xaxis_title='Period',
@@ -86,13 +86,13 @@ fig.show()
 # Standard Freight Units
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 fig.add_trace(go.Scatter(y=gorilla["Standard Freight Units"],
-                         mode='lines', name='Oversimplified Inventory Units'),
+                         mode='lines', name='Oversimplified Freight Units'),
               secondary_y=False)
 fig.add_trace(go.Scatter(y=semioptimal["Standard Freight Units"],
-                         mode='lines', name='Semi-Optimal Inventory Units'),
+                         mode='lines', name='Semi-Optimal Freight Units'),
               secondary_y=False)
 fig.add_trace(go.Scatter(y=optimal["Standard Freight Units"],
-                         mode='lines', name='Optimal Inventory Units'),
+                         mode='lines', name='Optimal Freight Units'),
               secondary_y=False)
 fig.update_layout(title='Standard Freight Units',
                   xaxis_title='Period',

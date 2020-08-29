@@ -93,7 +93,7 @@ class dataprep:
         itemmaster = pd.read_excel(fn, skiprows=1,
                                    sheet_name="itemmaster")
 
-        # finding terminal/component part numbers
+        # finding terminal/component part numbers ============================
         is_terminal = itemmaster['type'] == 'Terminal'
         is_component = itemmaster['type'] == 'Component'
 
@@ -113,14 +113,24 @@ class dataprep:
         # creating bom info ===================================================
         # number of columns that contain BOM info I need
 
-        # counting number of columns where BOMs live
-        bomcount = 0
+        # finding start column of BOM info
+        # then counting number of columns where BOMs live
+        bomstartcol = 0
+        bomcolcount = 0
+        counter = 0
         for i in itemmaster:
-            if "bom" in i:
-                bomcount += 1
+            if bomstartcol == 0:
+                if "bom" in i:
+                    bomcolcount += 1
+                    bomstartcol = counter
+            else:
+                if "bom" in i:
+                    bomcolcount += 1
+            counter += 1
 
         # selecting columns I need to extract BOM info from
-        bominfo = terminals.iloc[:, np.r_[0, 7:7+bomcount]]
+        bominfo = terminals.iloc[:, np.r_[0, bomstartcol:bomstartcol +
+                                          bomcolcount]]
 
         # initialize dictionary
         part_dict = {}
@@ -143,9 +153,21 @@ class dataprep:
         # getting demand info =================================================
         # https://stackoverflow.com/questions/26716616/convert-a-pandas-dataframe-to-a-dictionary
         # number of columns that contain demand info
-        n = 4
+        dmdstartcol = 0
+        dmdcolcount = 0
+        counter = 0
+        for i in itemmaster:
+            if dmdstartcol == 0:
+                if "dmd" in i:
+                    dmdcolcount += 1
+                    dmdstartcol = counter
+            else:
+                if "dmd" in i:
+                    dmdcolcount += 1
+            counter += 1
 
-        demandinfo = terminals.iloc[:, np.r_[0, 3:3+n]]
+        demandinfo = terminals.iloc[:, np.r_[0, dmdstartcol:dmdstartcol +
+                                             dmdcolcount]]
 
         # {'Item': [Forecastmean, Forecaststd, Demandmean, Demandstd]}
         self.demandinfo = demandinfo.set_index('partnumber').T.to_dict('list')
@@ -377,7 +399,7 @@ class inv_tools(dataprep):
 
     # creating function that will add/remove parts from inventory as necessary
     # to perform reworks
-    def get_gainz(self, have, need, qty, period):  # rework
+    def rework(self, have, need, qty, period):  # rework
         rework = self.rework_comp(have, need)
         # removing inventory needed to perform rework
         for i in rework["In"]:
@@ -455,8 +477,6 @@ class inv_tools(dataprep):
         return(rework_order)
         # rework_order = {score: terminal}
 
-
-
     # SIMULATION BRAINS ======================================================
     # Inventory Gorilla, this guy just listens to what is cooking inside the
     # ERP System, no reworks, no brains, just pure animalistic instincts
@@ -496,9 +516,6 @@ class inv_tools(dataprep):
 
             # getting total quantity of terminals we are short
             qtyshort = demandqty - self.oh_dict[model]
-            # qty = qtyshort
-            # expediting freight here
-            # self.freight(model, qtyshort, "Premium", period)
 
             # removing what is left of this part from inventory
             self.remove_inventory(model, self.oh_dict[model])
@@ -509,42 +526,47 @@ class inv_tools(dataprep):
                            key=operator.itemgetter(0))
 
             print("\tQty left:", str(qtyshort), "\n")
-            for score, terminal in order:
-                ohqty = self.oh_dict[terminal]
-                if ohqty > 0:
-                    if qtyshort > 0:
-                        print("\t\tReworking:", terminal, "into", model)
-                        # if ohqty larger than qtyshort then take the terminal
-                        # qty we are short. Else, we are taking everything in
-                        # inventory we have of that part
-                        if ohqty > qtyshort:
-                            print("\t\tQty Taking: ", qtyshort)
-                            # adding and removing components from invetory
-                            self.get_gainz(terminal, model, qtyshort, period)
 
-                            # adding associated rework costs to dictionary
-                            self.costs["Manufacturing"]["UnitsReworked"]\
-                                += qtyshort
+            # if there are terminals to rework then try to find out which one
+            # we can use. If not, expedite terminals we need here
+            if len(self.terminals) > 1:
+                for score, terminal in order:
+                    ohqty = self.oh_dict[terminal]
+                    if ohqty > 0:
+                        if qtyshort > 0:
+                            print("\t\tReworking:", terminal, "into", model)
+                            # if ohqty larger than qtyshort then take the terminal
+                            # qty we are short. Else, we are taking everything in
+                            # inventory we have of that part
+                            if ohqty > qtyshort:
+                                print("\t\tQty Taking: ", qtyshort)
+                                # adding and removing components from invetory
+                                self.rework(terminal, model, qtyshort, period)
 
-                            # decrementing total quantity short
-                            qtyshort -= qtyshort
-                            print("\t\tDemand Qty left:", str(qtyshort), "\n")
-                        else:
-                            print("\t\tQty Taking: ", ohqty)
-                            # adding and removing components from invetory
-                            self.get_gainz(terminal, model, ohqty, period)
+                                # adding associated rework costs to dictionary
+                                self.costs["Manufacturing"]["UnitsReworked"]\
+                                    += qtyshort
 
-                            # adding associated rework costs to dictionary
-                            self.costs["Manufacturing"]["UnitsReworked"]\
-                                += ohqty
+                                # decrementing total quantity short
+                                qtyshort -= qtyshort
+                                print("\t\tDemand Qty left:", str(qtyshort), "\n")
+                            else:
+                                print("\t\tQty Taking: ", ohqty)
+                                # adding and removing components from invetory
+                                self.rework(terminal, model, ohqty, period)
 
-                            # decrementing total quantity short
-                            qtyshort -= ohqty
-                            print("\t\tDemand Qty left:", str(qtyshort), "\n")
-                else:
-                    pass
-            # adding inventory ERP system would have said to expedite here
-            # self.add_inventory(model, qty)
+                                # adding associated rework costs to dictionary
+                                self.costs["Manufacturing"]["UnitsReworked"]\
+                                    += ohqty
+
+                                # decrementing total quantity short
+                                qtyshort -= ohqty
+                                print("\t\tDemand Qty left:", str(qtyshort), "\n")
+                    else:
+                        # if nothing is available to rework... air the sucker in!
+                        self.freight(model, qtyshort, "Premium", period)
+            else:
+                self.freight(model, qtyshort, "Premium", period)
 
     # Inventory Deity =======================================================
     # Inventory god function, finds the parts you are looking for
@@ -555,8 +577,8 @@ class inv_tools(dataprep):
         # demandqty is the quantity of the terminal needed
         # checking to see if demandqty of part on hand is enough to satisfy
         # demand
-        if self.maxreportaf(model) >= demandqty:
-            self.build(model, demandqty, period)
+        # if self.maxreportaf(model) >= demandqty:
+        self.build(model, demandqty, period)
 
 
 class simulation:
@@ -589,8 +611,9 @@ class simulation:
 
     # Simulation for PAR if it was run by Gorillas
     def run0(self, np):
-        random.seed(123)
         # np = number of periods I want to run simulation
+        random.seed(123)
+
         p = 1
 
         # need to tell simulation I will need to call inv_tools
@@ -646,8 +669,9 @@ class simulation:
 
     # simulation for regular PAR
     def run1(self, np):
-        random.seed(123)
         # np = number of periods I want to run simulation
+        random.seed(123)
+
         p = 1
 
         # need to tell simulation I will need to call inv_tools
@@ -704,10 +728,10 @@ class simulation:
 
     # simulation for postponement/riskpooling PAR
     def run2(self, np):
+        # np = number of periods I want to run simulation
         # setting seed
         random.seed(123)
 
-        # np = number of periods I want to run simulation
         p = 1
 
         # need to tell simulation I will need to call inv_tools

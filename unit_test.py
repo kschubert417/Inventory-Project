@@ -145,10 +145,10 @@ print("\n\nTesting Simulations functions ====================================")
 # number of times to run the simulation
 n = 5
 # print("\nSimulation for PAR if it was run by Gorillas")
-# s.run0(n)
+s.run0(n)
 
-print("\nsimulation for regular PAR")
-s.run1(n)
+# print("\nsimulation for regular PAR")
+# s.run1(n)
 
 # print("\nsimulation for postponement/riskpooling PAR")
 # s.run2(n)

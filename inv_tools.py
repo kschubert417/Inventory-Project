@@ -256,11 +256,14 @@ class inv_tools(dataprep):
     # used to help second simulation
     def thechange(self, items={'RAM.4GB': 380, 'RAM.8GB': 451}):
         for i in items:
-            # removing components and adding them to terminals
-            self.components.remove(i)
-            self.terminals += [i]
-            # adjusting value to get the "shell" of terminal with ram
-            self.values[i] = items[i]
+            try:
+                # removing components and adding them to terminals
+                self.components.remove(i)
+                self.terminals += [i]
+                # adjusting value to get the "shell" of terminal with ram
+                self.values[i] = items[i]
+            except ValueError:
+                pass
 
     # INVENTORY FUNCTIONS ===================================================
     # function to reset inventory before each simulation run need to turn
@@ -492,9 +495,11 @@ class inv_tools(dataprep):
         else:
             # when demand is higher than inventory just expedite remaining
             # freight in
-            qtyshort = demandqty - self.oh_dict[model]
+            ohqty = self.oh_dict[model]
+            qtyshort = demandqty - ohqty
             # expediting freight here
             self.freight(model, qtyshort, "Premium", period)
+            self.remove_inventory(model, ohqty)
 
     # Inventory god function, somwhat smarter than the Gorilla
     # finds the parts you are looking for and decides if a rework is needed.
@@ -604,8 +609,13 @@ class simulation:
             dmndstd = demandinfo[item][3]
 
             # getting forecast from demand data
-            forecast = round(abs(random.normal(fcmean, fcstd)))
-            demand = round(abs(random.normal(dmndmean, dmndstd)))
+            forecast = round(random.normal(fcmean, fcstd))
+            if forecast < 0:
+                forecast = 0
+
+            demand = round(random.normal(dmndmean, dmndstd))
+            if demand < 0:
+                demand = 0
 
             self.demand[part] = [forecast, demand]
 
@@ -713,7 +723,7 @@ class simulation:
 
                 # now time for the real demand for the part
                 f.inv_god(item, demand, p)
-                f.compsafetyvalve(800)
+                f.compsafetyvalve(25)
 
             f.periodstatsplot(p)
             p += 1

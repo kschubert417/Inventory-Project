@@ -12,6 +12,8 @@ from pathlib import Path
 
 # needs: ============================
 # https://realpython.com/python-testing/#testing-your-code
+# put all simulations into 1 file, column to indicate which rows belong to
+#   which simulation (Build into Simulation Class)
 
 class dataprep:
     def setup(self):
